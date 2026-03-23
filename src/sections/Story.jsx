@@ -12,6 +12,8 @@ const storySteps = [
     text:
       'Ich liebe Frontend, weil hier Technik, Design und Nutzererlebnis direkt zusammenkommen. Gute Interfaces sollen nicht nur funktionieren, sondern spürbar wirken.',
     tags: ['React', 'UI Systems', 'Motion', 'UX Thinking'],
+    modeClass: 'mode-frontend',
+    signal: 'Interface focus',
   },
   {
     step: '02',
@@ -20,6 +22,8 @@ const storySteps = [
     text:
       'Ich arbeite nicht nur mit Code, sondern denke auch visuell. Animation, Struktur, Rhythmus und Klarheit gehören für mich genauso zum Produkt wie die technische Umsetzung.',
     tags: ['Interaction', 'Structure', 'Visual Thinking', 'Storytelling'],
+    modeClass: 'mode-visual',
+    signal: 'Motion logic',
   },
   {
     step: '03',
@@ -28,6 +32,8 @@ const storySteps = [
     text:
       'Meine Stärke ist die Mischung aus Frontend, Designverständnis und technischem Breitenwissen. Dadurch entstehen Lösungen, die nicht nach Standardkasten aussehen.',
     tags: ['CAD', 'Creative Tech', 'Design', 'Allrounder Mindset'],
+    modeClass: 'mode-creative',
+    signal: 'Multidisciplinary',
   },
 ]
 
@@ -35,14 +41,40 @@ export default function Story() {
   const sectionRef = useRef(null)
   const panelRef = useRef(null)
   const progressFillRef = useRef(null)
+  const avatarShellRef = useRef(null)
+  const avatarHeadRef = useRef(null)
+  const avatarGlowRef = useRef(null)
+  const ringOneRef = useRef(null)
+  const ringTwoRef = useRef(null)
+  const ringThreeRef = useRef(null)
+  const contentRef = useRef(null)
+
   const [activeStep, setActiveStep] = useState(0)
 
   useEffect(() => {
     const section = sectionRef.current
     const panel = panelRef.current
     const fill = progressFillRef.current
+    const avatarShell = avatarShellRef.current
+    const avatarHead = avatarHeadRef.current
+    const avatarGlow = avatarGlowRef.current
+    const ringOne = ringOneRef.current
+    const ringTwo = ringTwoRef.current
+    const ringThree = ringThreeRef.current
+    const content = contentRef.current
 
-    if (!section || !panel || !fill) {
+    if (
+      !section ||
+      !panel ||
+      !fill ||
+      !avatarShell ||
+      !avatarHead ||
+      !avatarGlow ||
+      !ringOne ||
+      !ringTwo ||
+      !ringThree ||
+      !content
+    ) {
       return undefined
     }
 
@@ -66,6 +98,44 @@ export default function Story() {
             trigger: section,
             start: 'top 75%',
           },
+        })
+
+        gsap.to(ringOne, {
+          rotate: 360,
+          duration: 18,
+          ease: 'none',
+          repeat: -1,
+        })
+
+        gsap.to(ringTwo, {
+          rotate: -360,
+          duration: 24,
+          ease: 'none',
+          repeat: -1,
+        })
+
+        gsap.to(ringThree, {
+          rotate: 360,
+          duration: 30,
+          ease: 'none',
+          repeat: -1,
+        })
+
+        gsap.to(avatarShell, {
+          y: -10,
+          duration: 2.8,
+          ease: 'sine.inOut',
+          repeat: -1,
+          yoyo: true,
+        })
+
+        gsap.to(avatarGlow, {
+          scale: 1.08,
+          opacity: 0.95,
+          duration: 2.1,
+          ease: 'sine.inOut',
+          repeat: -1,
+          yoyo: true,
         })
 
         ScrollTrigger.create({
@@ -101,6 +171,14 @@ export default function Story() {
               ease: 'none',
               overwrite: 'auto',
             })
+
+            gsap.to(avatarHead, {
+              rotateZ: -2 + progress * 4,
+              y: -8 + progress * 16,
+              duration: 0.2,
+              ease: 'none',
+              overwrite: 'auto',
+            })
           },
         })
       }, section)
@@ -125,6 +203,35 @@ export default function Story() {
             start: 'top 80%',
           },
         })
+
+        gsap.to(ringOne, {
+          rotate: 360,
+          duration: 18,
+          ease: 'none',
+          repeat: -1,
+        })
+
+        gsap.to(ringTwo, {
+          rotate: -360,
+          duration: 24,
+          ease: 'none',
+          repeat: -1,
+        })
+
+        gsap.to(ringThree, {
+          rotate: 360,
+          duration: 30,
+          ease: 'none',
+          repeat: -1,
+        })
+
+        gsap.to(avatarShell, {
+          y: -8,
+          duration: 2.8,
+          ease: 'sine.inOut',
+          repeat: -1,
+          yoyo: true,
+        })
       }, section)
 
       return () => ctx.revert()
@@ -132,6 +239,42 @@ export default function Story() {
 
     return () => mm.revert()
   }, [])
+
+  useEffect(() => {
+    if (!contentRef.current || !avatarHeadRef.current) {
+      return
+    }
+
+    gsap.fromTo(
+      contentRef.current,
+      {
+        opacity: 0.45,
+        y: 16,
+      },
+      {
+        opacity: 1,
+        y: 0,
+        duration: 0.45,
+        ease: 'power2.out',
+        overwrite: 'auto',
+      }
+    )
+
+    gsap.fromTo(
+      avatarHeadRef.current,
+      {
+        scale: 0.94,
+        opacity: 0.7,
+      },
+      {
+        scale: 1,
+        opacity: 1,
+        duration: 0.45,
+        ease: 'power2.out',
+        overwrite: 'auto',
+      }
+    )
+  }, [activeStep])
 
   const current = storySteps[activeStep]
 
@@ -166,25 +309,43 @@ export default function Story() {
         </div>
 
         <div className="story-right">
-          <div ref={panelRef} className="story-panel">
+          <div ref={panelRef} className={`story-panel ${current.modeClass}`}>
             <div className="story-panel-grid" />
+            <div className="story-panel-scanlines" />
             <div className="story-panel-glow one" />
             <div className="story-panel-glow two" />
 
             <div className="story-panel-header">
-              <span className="story-panel-kicker">Digital profile</span>
+              <span className="story-panel-kicker">Digital guide</span>
               <span className="story-panel-status">Live</span>
             </div>
 
-            <div className="story-avatar-shell">
-              <div className="story-avatar-ring ring-one" />
-              <div className="story-avatar-ring ring-two" />
-              <div className="story-avatar-core">
-                <span>{current.step}</span>
+            <div ref={avatarShellRef} className="story-avatar-shell">
+              <div ref={ringOneRef} className="story-avatar-ring ring-one" />
+              <div ref={ringTwoRef} className="story-avatar-ring ring-two" />
+              <div ref={ringThreeRef} className="story-avatar-ring ring-three" />
+
+              <div ref={avatarGlowRef} className="story-avatar-glow" />
+
+              <div ref={avatarHeadRef} className="story-avatar-figure">
+                <div className="story-avatar-halo" />
+                <div className="story-avatar-head">
+                  <div className="story-avatar-faceplate" />
+                  <div className="story-avatar-eye-band" />
+                  <div className="story-avatar-eye-glow left" />
+                  <div className="story-avatar-eye-glow right" />
+                  <div className="story-avatar-mouth-line" />
+                </div>
+                <div className="story-avatar-neck" />
+                <div className="story-avatar-shoulders">
+                  <div className="story-avatar-shoulder-line top" />
+                  <div className="story-avatar-shoulder-line mid" />
+                  <div className="story-avatar-core-badge">{current.step}</div>
+                </div>
               </div>
             </div>
 
-            <div className="story-panel-copy">
+            <div ref={contentRef} className="story-panel-copy">
               <p className="story-panel-eyebrow">{current.eyebrow}</p>
               <h3>{current.title}</h3>
               <p>{current.text}</p>
@@ -199,7 +360,7 @@ export default function Story() {
             </div>
 
             <div className="story-panel-footer">
-              <span>Profile signal</span>
+              <span>{current.signal}</span>
               <span>{current.step} / 03</span>
             </div>
           </div>
