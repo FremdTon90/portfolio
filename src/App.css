@@ -70,13 +70,8 @@ button {
 section {
     position: relative;
     width: 100%;
-    min-height: 100vh;
-    padding: 120px 10%;
-    display: flex;
-    flex-direction: column;
-    justify-content: center;
     border-bottom: 1px solid var(--line);
-    overflow: hidden;
+    overflow: clip;
 }
 
 .section-label {
@@ -99,8 +94,16 @@ section {
     max-width: 760px;
 }
 
+
+/* --------------------------------------------------
+   HERO
+-------------------------------------------------- */
+
 .hero {
     min-height: 100vh;
+    padding: 120px 10%;
+    display: flex;
+    flex-direction: column;
     align-items: flex-start;
     justify-content: center;
     background: radial-gradient(circle at 20% 20%, rgba(96, 165, 250, 0.18), transparent 30%), radial-gradient(circle at 80% 30%, rgba(139, 92, 246, 0.16), transparent 28%), radial-gradient(circle at 50% 80%, rgba(103, 232, 249, 0.12), transparent 30%), linear-gradient(180deg, #04050b 0%, #070b14 45%, #050816 100%);
@@ -263,6 +266,19 @@ section {
     background: linear-gradient(90deg, rgba(103, 232, 249, 0.2), rgba(103, 232, 249, 0.9));
 }
 
+
+/* --------------------------------------------------
+   QUICKFACTS
+-------------------------------------------------- */
+
+#quickfacts {
+    min-height: 100svh;
+    padding: 5rem 10%;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+}
+
 .quickfacts-grid {
     position: relative;
     z-index: 2;
@@ -292,17 +308,26 @@ section {
     font-size: 0.98rem;
 }
 
+
+/* --------------------------------------------------
+   STORY
+-------------------------------------------------- */
+
 .story-section {
+    min-height: 100svh;
+    padding: 0 10%;
+    display: flex;
+    align-items: center;
     background: radial-gradient(circle at 18% 22%, rgba(103, 232, 249, 0.08), transparent 22%), radial-gradient(circle at 82% 78%, rgba(139, 92, 246, 0.08), transparent 22%), linear-gradient(180deg, rgba(8, 11, 20, 1) 0%, rgba(5, 8, 22, 1) 100%);
 }
 
 .story-layout {
     display: grid;
     grid-template-columns: minmax(280px, 420px) minmax(320px, 1fr);
-    align-items: center;
+    align-items: stretch;
     gap: 56px;
     width: 100%;
-    min-height: 72vh;
+    min-height: min(78svh, 820px);
 }
 
 .story-left,
@@ -311,27 +336,34 @@ section {
     z-index: 2;
 }
 
+.story-left {
+    display: flex;
+    align-items: center;
+}
+
 .story-progress {
     display: grid;
     grid-template-columns: 20px 1fr;
     gap: 24px;
-    align-items: flex-start;
+    align-items: center;
+    width: 100%;
 }
 
 .story-progress-track {
     position: relative;
     width: 3px;
-    height: 320px;
+    height: 230px;
     border-radius: 999px;
     background: rgba(255, 255, 255, 0.08);
     overflow: hidden;
-    margin-top: 10px;
+    margin-top: 8px;
 }
 
 .story-progress-fill {
     position: absolute;
+    top: 0;
     left: 0;
-    bottom: 0;
+    bottom: auto;
     width: 100%;
     height: 6%;
     border-radius: 999px;
@@ -342,6 +374,7 @@ section {
 .story-progress-steps {
     display: flex;
     flex-direction: column;
+    justify-content: center;
     gap: 22px;
 }
 
@@ -399,7 +432,7 @@ section {
 
 .story-panel {
     position: relative;
-    min-height: 620px;
+    min-height: min(68svh, 620px);
     padding: 30px;
     border: 1px solid rgba(255, 255, 255, 0.09);
     border-radius: 30px;
@@ -434,7 +467,7 @@ section {
 .story-panel-scanlines {
     position: absolute;
     inset: 0;
-    background: repeating-linear-gradient( to bottom, rgba(255, 255, 255, 0.035) 0px, rgba(255, 255, 255, 0.035) 1px, transparent 3px, transparent 7px);
+    background: repeating-linear-gradient(to bottom, rgba(255, 255, 255, 0.035) 0px, rgba(255, 255, 255, 0.035) 1px, transparent 3px, transparent 7px);
     opacity: 0.18;
     pointer-events: none;
     mix-blend-mode: screen;
@@ -738,9 +771,18 @@ section {
     filter: hue-rotate(60deg);
 }
 
-@media (max-width: 900px) {
-    section {
+
+/* --------------------------------------------------
+   RESPONSIVE
+-------------------------------------------------- */
+
+@media (max-width: 1080px) {
+    .hero {
         padding: 100px 7%;
+    }
+    #quickfacts {
+        min-height: auto;
+        padding: 5rem 7%;
     }
     .quickfacts-grid {
         grid-template-columns: 1fr;
@@ -748,9 +790,15 @@ section {
     .hero-scroll {
         right: 7%;
     }
+    .story-section {
+        min-height: auto;
+        padding: 5rem 7%;
+        display: block;
+    }
     .story-layout {
         grid-template-columns: 1fr;
         gap: 32px;
+        min-height: auto;
     }
     .story-progress {
         grid-template-columns: 1fr;
@@ -764,6 +812,13 @@ section {
 }
 
 @media (max-width: 640px) {
+    .hero {
+        padding: 92px 1rem 4rem;
+    }
+    #quickfacts,
+    .story-section {
+        padding: 4rem 1rem;
+    }
     .hero-actions {
         width: 100%;
         flex-direction: column;

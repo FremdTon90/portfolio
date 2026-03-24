@@ -88,6 +88,11 @@ export default function Story() {
           scale: 0.96,
         })
 
+        gsap.set(fill, {
+          height: '6%',
+          transformOrigin: 'top center',
+        })
+
         gsap.to(panel, {
           opacity: 1,
           y: 0,
@@ -141,16 +146,19 @@ export default function Story() {
         ScrollTrigger.create({
           trigger: section,
           start: 'top top',
-          end: '+=2200',
+          end: '+=220%',
           pin: true,
-          scrub: 1,
+          scrub: 1.35,
+          pinSpacing: true,
+          anticipatePin: 0,
+          invalidateOnRefresh: true,
           onUpdate: (self) => {
-            const progress = self.progress
+            const progress = gsap.utils.clamp(0, 1, self.progress)
             let nextStep = 0
 
-            if (progress >= 0.66) {
+            if (progress >= 0.74) {
               nextStep = 2
-            } else if (progress >= 0.33) {
+            } else if (progress >= 0.38) {
               nextStep = 1
             }
 
@@ -164,17 +172,17 @@ export default function Story() {
             })
 
             gsap.to(panel, {
-              rotateX: -4 + progress * 8,
-              rotateY: -8 + progress * 16,
-              y: progress * -14,
+              rotateX: -2.5 + progress * 5,
+              rotateY: -5 + progress * 10,
+              y: progress * -10,
               duration: 0.2,
               ease: 'none',
               overwrite: 'auto',
             })
 
             gsap.to(avatarHead, {
-              rotateZ: -2 + progress * 4,
-              y: -8 + progress * 16,
+              rotateZ: -1.5 + progress * 3,
+              y: -5 + progress * 10,
               duration: 0.2,
               ease: 'none',
               overwrite: 'auto',
@@ -191,6 +199,11 @@ export default function Story() {
         gsap.set(panel, {
           opacity: 0,
           y: 30,
+        })
+
+        gsap.set(fill, {
+          height: '6%',
+          transformOrigin: 'top center',
         })
 
         gsap.to(panel, {
@@ -231,6 +244,33 @@ export default function Story() {
           ease: 'sine.inOut',
           repeat: -1,
           yoyo: true,
+        })
+
+        ScrollTrigger.create({
+          trigger: section,
+          start: 'top bottom',
+          end: 'bottom top',
+          scrub: 0.6,
+          invalidateOnRefresh: true,
+          onUpdate: (self) => {
+            const progress = gsap.utils.clamp(0, 1, self.progress)
+            let nextStep = 0
+
+            if (progress >= 0.74) {
+              nextStep = 2
+            } else if (progress >= 0.38) {
+              nextStep = 1
+            }
+
+            setActiveStep((prev) => (prev !== nextStep ? nextStep : prev))
+
+            gsap.to(fill, {
+              height: `${Math.max(progress * 100, 6)}%`,
+              duration: 0.18,
+              ease: 'none',
+              overwrite: 'auto',
+            })
+          },
         })
       }, section)
 
