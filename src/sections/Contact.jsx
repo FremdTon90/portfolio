@@ -7,5 +7,6 @@ export default function Contact() {
         Hier kommen später Mail, GitHub, CV-Download und dein sauberer Abschluss rein.
       </p>
     </section>
+    
   )
 }
