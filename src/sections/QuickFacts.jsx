@@ -76,7 +76,7 @@ export default function QuickFacts() {
   }, [])
 
   return (
-    <section ref={sectionRef}>
+    <section ref={sectionRef} id="quickfacts">
       <span ref={labelRef} className="section-label">
         Quick Facts
       </span>

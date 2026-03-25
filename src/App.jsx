@@ -2,7 +2,6 @@ import './App.css'
 
 import Hero from './sections/Hero'
 import QuickFacts from './sections/QuickFacts'
-import Story from './sections/Story'
 import Skills from './sections/Skills'
 import Projects from './sections/Projects'
 import Showcase from './sections/Showcase'
@@ -13,7 +12,6 @@ function App() {
     <main>
       <Hero />
       <QuickFacts />
-      <Story />
       <Skills />
       <Projects />
       <Showcase />
