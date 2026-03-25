@@ -1,80 +1,66 @@
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import { gsap } from 'gsap'
 import { ScrollTrigger } from 'gsap/ScrollTrigger'
+import StoryScene from './StoryScene'
 
 gsap.registerPlugin(ScrollTrigger)
 
 const storySteps = [
   {
     step: '01',
-    eyebrow: 'Frontend first',
-    title: 'Frontend ist mein Kern.',
+    eyebrow: 'Frontend + Wirkung',
+    title: 'Ich baue Interfaces, die nicht nach Baukasten aussehen.',
     text:
-      'Ich liebe Frontend, weil hier Technik, Design und Nutzererlebnis direkt zusammenkommen. Gute Interfaces sollen nicht nur funktionieren, sondern spürbar wirken.',
-    tags: ['React', 'UI Systems', 'Motion', 'UX Thinking'],
-    modeClass: 'mode-frontend',
-    signal: 'Interface focus',
+      'Mein Fokus liegt auf Frontend mit Charakter: saubere Struktur, starke Usability und Bewegung, die nicht nervt, sondern erklärt. Kurz gesagt: hübsch reicht nicht, es muss sich auch richtig anfühlen.',
+    tags: ['React', 'UX', 'Motion', 'UI Systems'],
+    signal: 'Frontend mindset',
+    mood: 'frontend',
+    spotlight: 'Ich verbinde Designgefühl mit sauberer Umsetzung.',
   },
   {
     step: '02',
-    eyebrow: 'Visual + technical',
-    title: 'Ich denke in Bewegung, Raum und Systemen.',
+    eyebrow: '3D + Kreativtechnik',
+    title: 'Ich denke nicht nur in Screens, sondern auch in Raum, Rhythmus und Inszenierung.',
     text:
-      'Ich arbeite nicht nur mit Code, sondern denke auch visuell. Animation, Struktur, Rhythmus und Klarheit gehören für mich genauso zum Produkt wie die technische Umsetzung.',
-    tags: ['Interaction', 'Structure', 'Visual Thinking', 'Storytelling'],
-    modeClass: 'mode-visual',
-    signal: 'Motion logic',
+      'CAD, visuelle Gestaltung und Sounddesign fließen direkt in meine Arbeit ein. Dadurch entstehen digitale Erlebnisse mit mehr Tiefe als ein Standard-Template von der Stange.',
+    tags: ['3D', 'CAD', 'Visual Thinking', 'Audio'],
+    signal: 'Creative tech',
+    mood: 'creative',
+    spotlight: 'Technik darf klar sein und trotzdem Eindruck machen.',
   },
   {
     step: '03',
-    eyebrow: 'Beyond classic web',
-    title: 'CAD, Design und Creative Tech machen mein Profil besonders.',
+    eyebrow: 'Systeme + Praxis',
+    title: 'Ich kombiniere Software, Technikverständnis und echte Hands-on-Praxis.',
     text:
-      'Meine Stärke ist die Mischung aus Frontend, Designverständnis und technischem Breitenwissen. Dadurch entstehen Lösungen, die nicht nach Standardkasten aussehen.',
-    tags: ['CAD', 'Creative Tech', 'Design', 'Allrounder Mindset'],
-    modeClass: 'mode-creative',
-    signal: 'Multidisciplinary',
+      'Durch Systemintegration, Mechatronik und Entwicklungsarbeit denke ich nicht isoliert im Frontend. Ich verstehe Abläufe, Logik und technische Zusammenhänge — also nicht nur die schöne Fassade, sondern auch das Maschinenhaus dahinter.',
+    tags: ['Python', 'Systemintegration', 'Mechatronik', 'Engineering'],
+    signal: 'Full spectrum',
+    mood: 'engineering',
+    spotlight: 'Ich bringe UI, Logik und technische Realität zusammen.',
   },
 ]
 
 export default function Story() {
   const sectionRef = useRef(null)
-  const panelRef = useRef(null)
-  const progressFillRef = useRef(null)
-  const avatarShellRef = useRef(null)
-  const avatarHeadRef = useRef(null)
-  const avatarGlowRef = useRef(null)
-  const ringOneRef = useRef(null)
-  const ringTwoRef = useRef(null)
-  const ringThreeRef = useRef(null)
-  const contentRef = useRef(null)
-
+  const headerRef = useRef(null)
+  const stageRef = useRef(null)
+  const copyRef = useRef(null)
+  const cardRefs = useRef([])
+  const bubbleRef = useRef(null)
   const [activeStep, setActiveStep] = useState(0)
+
+  const current = useMemo(() => storySteps[activeStep], [activeStep])
 
   useEffect(() => {
     const section = sectionRef.current
-    const panel = panelRef.current
-    const fill = progressFillRef.current
-    const avatarShell = avatarShellRef.current
-    const avatarHead = avatarHeadRef.current
-    const avatarGlow = avatarGlowRef.current
-    const ringOne = ringOneRef.current
-    const ringTwo = ringTwoRef.current
-    const ringThree = ringThreeRef.current
-    const content = contentRef.current
+    const header = headerRef.current
+    const stage = stageRef.current
+    const copy = copyRef.current
+    const cards = cardRefs.current.filter(Boolean)
+    const bubble = bubbleRef.current
 
-    if (
-      !section ||
-      !panel ||
-      !fill ||
-      !avatarShell ||
-      !avatarHead ||
-      !avatarGlow ||
-      !ringOne ||
-      !ringTwo ||
-      !ringThree ||
-      !content
-    ) {
+    if (!section || !header || !stage || !copy || !cards.length || !bubble) {
       return undefined
     }
 
@@ -82,111 +68,70 @@ export default function Story() {
 
     mm.add('(min-width: 901px)', () => {
       const ctx = gsap.context(() => {
-        gsap.set(panel, {
+        gsap.from(header, {
           opacity: 0,
           y: 40,
-          scale: 0.96,
-        })
-
-        gsap.set(fill, {
-          height: '6%',
-          transformOrigin: 'top center',
-        })
-
-        gsap.to(panel, {
-          opacity: 1,
-          y: 0,
-          scale: 1,
-          duration: 0.9,
+          duration: 0.8,
           ease: 'power3.out',
           scrollTrigger: {
             trigger: section,
-            start: 'top 75%',
+            start: 'top 78%',
           },
         })
 
-        gsap.to(ringOne, {
-          rotate: 360,
-          duration: 18,
+        gsap.from(stage, {
+          opacity: 0,
+          y: 50,
+          scale: 0.96,
+          duration: 1,
+          ease: 'power3.out',
+          scrollTrigger: {
+            trigger: section,
+            start: 'top 72%',
+          },
+        })
+
+        gsap.to(section.querySelector('.story-ambient--one'), {
+          yPercent: -14,
           ease: 'none',
-          repeat: -1,
+          scrollTrigger: {
+            trigger: section,
+            start: 'top bottom',
+            end: 'bottom top',
+            scrub: true,
+          },
         })
 
-        gsap.to(ringTwo, {
-          rotate: -360,
-          duration: 24,
+        gsap.to(section.querySelector('.story-ambient--two'), {
+          yPercent: 10,
+          xPercent: -8,
           ease: 'none',
-          repeat: -1,
-        })
-
-        gsap.to(ringThree, {
-          rotate: 360,
-          duration: 30,
-          ease: 'none',
-          repeat: -1,
-        })
-
-        gsap.to(avatarShell, {
-          y: -10,
-          duration: 2.8,
-          ease: 'sine.inOut',
-          repeat: -1,
-          yoyo: true,
-        })
-
-        gsap.to(avatarGlow, {
-          scale: 1.08,
-          opacity: 0.95,
-          duration: 2.1,
-          ease: 'sine.inOut',
-          repeat: -1,
-          yoyo: true,
+          scrollTrigger: {
+            trigger: section,
+            start: 'top bottom',
+            end: 'bottom top',
+            scrub: true,
+          },
         })
 
         ScrollTrigger.create({
           trigger: section,
           start: 'top top',
           end: '+=220%',
-          pin: true,
-          scrub: 1.35,
-          pinSpacing: true,
-          anticipatePin: 0,
+          pin: stage,
+          scrub: 1,
           invalidateOnRefresh: true,
           onUpdate: (self) => {
             const progress = gsap.utils.clamp(0, 1, self.progress)
-            let nextStep = 0
+            let next = 0
 
-            if (progress >= 0.74) {
-              nextStep = 2
-            } else if (progress >= 0.38) {
-              nextStep = 1
+            if (progress >= 0.68) {
+              next = 2
+            } else if (progress >= 0.34) {
+              next = 1
             }
 
-            setActiveStep((prev) => (prev !== nextStep ? nextStep : prev))
-
-            gsap.to(fill, {
-              height: `${Math.max(progress * 100, 6)}%`,
-              duration: 0.18,
-              ease: 'none',
-              overwrite: 'auto',
-            })
-
-            gsap.to(panel, {
-              rotateX: -2.5 + progress * 5,
-              rotateY: -5 + progress * 10,
-              y: progress * -10,
-              duration: 0.2,
-              ease: 'none',
-              overwrite: 'auto',
-            })
-
-            gsap.to(avatarHead, {
-              rotateZ: -1.5 + progress * 3,
-              y: -5 + progress * 10,
-              duration: 0.2,
-              ease: 'none',
-              overwrite: 'auto',
-            })
+            setActiveStep((prev) => (prev === next ? prev : next))
           },
         })
       }, section)
@@ -196,54 +141,16 @@ export default function Story() {
 
     mm.add('(max-width: 900px)', () => {
       const ctx = gsap.context(() => {
-        gsap.set(panel, {
+        gsap.from([header, stage], {
           opacity: 0,
           y: 30,
-        })
-
-        gsap.set(fill, {
-          height: '6%',
-          transformOrigin: 'top center',
-        })
-
-        gsap.to(panel, {
-          opacity: 1,
-          y: 0,
           duration: 0.8,
           ease: 'power3.out',
+          stagger: 0.1,
           scrollTrigger: {
             trigger: section,
-            start: 'top 80%',
+            start: 'top 84%',
           },
-        })
-
-        gsap.to(ringOne, {
-          rotate: 360,
-          duration: 18,
-          ease: 'none',
-          repeat: -1,
-        })
-
-        gsap.to(ringTwo, {
-          rotate: -360,
-          duration: 24,
-          ease: 'none',
-          repeat: -1,
-        })
-
-        gsap.to(ringThree, {
-          rotate: 360,
-          duration: 30,
-          ease: 'none',
-          repeat: -1,
-        })
-
-        gsap.to(avatarShell, {
-          y: -8,
-          duration: 2.8,
-          ease: 'sine.inOut',
-          repeat: -1,
-          yoyo: true,
         })
 
         ScrollTrigger.create({
@@ -251,25 +158,17 @@ export default function Story() {
           start: 'top bottom',
           end: 'bottom top',
           scrub: 0.6,
-          invalidateOnRefresh: true,
           onUpdate: (self) => {
             const progress = gsap.utils.clamp(0, 1, self.progress)
-            let nextStep = 0
+            let next = 0
 
-            if (progress >= 0.74) {
-              nextStep = 2
-            } else if (progress >= 0.38) {
-              nextStep = 1
+            if (progress >= 0.68) {
+              next = 2
+            } else if (progress >= 0.34) {
+              next = 1
             }
 
-            setActiveStep((prev) => (prev !== nextStep ? nextStep : prev))
-
-            gsap.to(fill, {
-              height: `${Math.max(progress * 100, 6)}%`,
-              duration: 0.18,
-              ease: 'none',
-              overwrite: 'auto',
-            })
+            setActiveStep((prev) => (prev === next ? prev : next))
           },
         })
       }, section)
@@ -281,128 +180,108 @@ export default function Story() {
   }, [])
 
   useEffect(() => {
-    if (!contentRef.current || !avatarHeadRef.current) {
+    const cards = cardRefs.current.filter(Boolean)
+    const bubble = bubbleRef.current
+    const copy = copyRef.current
+
+    if (!cards.length || !bubble || !copy) {
       return
     }
 
+    gsap.to(cards, {
+      opacity: (index) => (index === activeStep ? 1 : 0.42),
+      y: (index) => (index === activeStep ? 0 : 8),
+      scale: (index) => (index === activeStep ? 1 : 0.97),
+      borderColor: (index) =>
+        index === activeStep ? 'rgba(103, 232, 249, 0.35)' : 'rgba(255,255,255,0.08)',
+      boxShadow: (index) =>
+        index === activeStep
+          ? '0 20px 40px rgba(0, 0, 0, 0.22), 0 0 40px rgba(103, 232, 249, 0.08)'
+          : '0 12px 24px rgba(0, 0, 0, 0.12)',
+      duration: 0.35,
+      ease: 'power2.out',
+      overwrite: 'auto',
+    })
+
     gsap.fromTo(
-      contentRef.current,
-      {
-        opacity: 0.45,
-        y: 16,
-      },
-      {
-        opacity: 1,
-        y: 0,
-        duration: 0.45,
-        ease: 'power2.out',
-        overwrite: 'auto',
-      }
+      bubble,
+      { opacity: 0, y: 14, scale: 0.96 },
+      { opacity: 1, y: 0, scale: 1, duration: 0.42, ease: 'power2.out', overwrite: 'auto' }
     )
 
     gsap.fromTo(
-      avatarHeadRef.current,
-      {
-        scale: 0.94,
-        opacity: 0.7,
-      },
-      {
-        scale: 1,
-        opacity: 1,
-        duration: 0.45,
-        ease: 'power2.out',
-        overwrite: 'auto',
-      }
+      copy,
+      { opacity: 0.55, y: 16 },
+      { opacity: 1, y: 0, duration: 0.42, ease: 'power2.out', overwrite: 'auto' }
     )
   }, [activeStep])
 
-  const current = storySteps[activeStep]
-
   return (
-    <section ref={sectionRef} className="story-section">
-      <span className="section-label">Story</span>
+    <section ref={sectionRef} className="story-section" id="story">
+      <div className="story-ambient story-ambient--one" />
+      <div className="story-ambient story-ambient--two" />
 
-      <div className="story-layout">
-        <div className="story-left">
-          <div className="story-progress">
-            <div className="story-progress-track">
-              <div ref={progressFillRef} className="story-progress-fill" />
-            </div>
+      <div ref={headerRef} className="story-header">
+        <span className="section-kicker">Story</span>
+        <h2>
+          Kein langweiliger Lebenslaufblock.
+          <span> Lieber ein Avatar, der kurz übernimmt.</span>
+        </h2>
+        <p>
+          Hier erzählt ein kleiner 3D-Buddy in drei Stationen, wie ich arbeite: visuell,
+          technisch und mit einer guten Portion Praxis. Der zeigt sogar auf den Text — ganz ohne
+          PowerPoint-Vibes aus 2009.
+        </p>
+      </div>
 
-            <div className="story-progress-steps">
-              {storySteps.map((item, index) => (
-                <button
-                  key={item.step}
-                  type="button"
-                  className={`story-step-button ${activeStep === index ? 'active' : ''}`}
-                  onClick={() => setActiveStep(index)}
-                >
-                  <span className="story-step-number">{item.step}</span>
-                  <span className="story-step-copy">
-                    <span className="story-step-eyebrow">{item.eyebrow}</span>
-                    <span className="story-step-title">{item.title}</span>
-                  </span>
-                </button>
-              ))}
-            </div>
+      <div ref={stageRef} className="story-stage">
+        <div className="story-scene-panel">
+          <div ref={bubbleRef} className="story-speech-bubble">
+            <span className="story-speech-label">Avatar says</span>
+            <p>{current.spotlight}</p>
+          </div>
+
+          <div className="story-canvas-wrap">
+            <StoryScene activeIndex={activeStep} mood={current.mood} />
           </div>
         </div>
 
-        <div className="story-right">
-          <div ref={panelRef} className={`story-panel ${current.modeClass}`}>
-            <div className="story-panel-grid" />
-            <div className="story-panel-scanlines" />
-            <div className="story-panel-glow one" />
-            <div className="story-panel-glow two" />
+        <div ref={copyRef} className="story-copy-panel">
+          <div className="story-copy-topline">
+            <span className="story-step-index">{current.step}</span>
+            <span className="story-step-signal">{current.signal}</span>
+          </div>
 
-            <div className="story-panel-header">
-              <span className="story-panel-kicker">Digital guide</span>
-              <span className="story-panel-status">Live</span>
-            </div>
+          <p className="story-panel-eyebrow">{current.eyebrow}</p>
+          <h3>{current.title}</h3>
+          <p>{current.text}</p>
 
-            <div ref={avatarShellRef} className="story-avatar-shell">
-              <div ref={ringOneRef} className="story-avatar-ring ring-one" />
-              <div ref={ringTwoRef} className="story-avatar-ring ring-two" />
-              <div ref={ringThreeRef} className="story-avatar-ring ring-three" />
+          <div className="story-tags">
+            {current.tags.map((tag) => (
+              <span key={tag} className="story-tag">
+                {tag}
+              </span>
+            ))}
+          </div>
 
-              <div ref={avatarGlowRef} className="story-avatar-glow" />
-
-              <div ref={avatarHeadRef} className="story-avatar-figure">
-                <div className="story-avatar-halo" />
-                <div className="story-avatar-head">
-                  <div className="story-avatar-faceplate" />
-                  <div className="story-avatar-eye-band" />
-                  <div className="story-avatar-eye-glow left" />
-                  <div className="story-avatar-eye-glow right" />
-                  <div className="story-avatar-mouth-line" />
-                </div>
-                <div className="story-avatar-neck" />
-                <div className="story-avatar-shoulders">
-                  <div className="story-avatar-shoulder-line top" />
-                  <div className="story-avatar-shoulder-line mid" />
-                  <div className="story-avatar-core-badge">{current.step}</div>
-                </div>
-              </div>
-            </div>
-
-            <div ref={contentRef} className="story-panel-copy">
-              <p className="story-panel-eyebrow">{current.eyebrow}</p>
-              <h3>{current.title}</h3>
-              <p>{current.text}</p>
-
-              <div className="story-tags">
-                {current.tags.map((tag) => (
-                  <span key={tag} className="story-tag">
-                    {tag}
-                  </span>
-                ))}
-              </div>
-            </div>
-
-            <div className="story-panel-footer">
-              <span>{current.signal}</span>
-              <span>{current.step} / 03</span>
-            </div>
+          <div className="story-card-list">
+            {storySteps.map((item, index) => (
+              <button
+                key={item.step}
+                type="button"
+                className={`story-card ${index === activeStep ? 'is-active' : ''}`}
+                onClick={() => setActiveStep(index)}
+                ref={(node) => {
+                  cardRefs.current[index] = node
+                }}
+              >
+                <span className="story-card-step">{item.step}</span>
+                <span className="story-card-copy">
+                  <strong>{item.eyebrow}</strong>
+                  <small>{item.title}</small>
+                </span>
+              </button>
+            ))}
           </div>
         </div>
       </div>

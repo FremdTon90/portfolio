@@ -33,25 +33,33 @@ const skillGroups = [
 ];
 
 const floatingSkills = [
-  { label: "React", tone: "ui", zone: "frontend", x: 0.24, y: 0.22, speed: 25, phase: 0.2 },
-  { label: "UX Systems", tone: "ui", zone: "frontend", x: 0.18, y: 0.42, speed: 25, phase: 1.1 },
-  { label: "HTML", tone: "ui", zone: "frontend", x: 0.32, y: 0.32, speed: 25, phase: 0.75 },
-  { label: "CSS", tone: "ui", zone: "frontend", x: 0.12, y: 0.28, speed: 25, phase: 1.45 },
+  // UI
+  { label: "React", tone: "ui", zone: "frontend", x: 0.22, y: 0.18, speed: 25, phase: 0.2 },
+  { label: "Vite", tone: "ui", zone: "frontend", x: 0.14, y: 0.38, speed: 25, phase: 1.1 },
+  { label: "HTML", tone: "ui", zone: "frontend", x: 0.30, y: 0.26, speed: 25, phase: 0.75 },
+  { label: "CSS", tone: "ui", zone: "frontend", x: 0.10, y: 0.26, speed: 25, phase: 1.45 },
+  { label: "JavaScript", tone: "ui", zone: "frontend", x: 0.26, y: 0.40, speed: 25, phase: 0.95 },
 
-  { label: "Python", tone: "logic", zone: "backend", x: 0.78, y: 0.22, speed: 25, phase: 1.8 },
-  { label: "SQL", tone: "logic", zone: "backend", x: 0.87, y: 0.41, speed: 25, phase: 2.7 },
-  { label: "Django", tone: "logic", zone: "backend", x: 0.68, y: 0.34, speed: 25, phase: 2.2 },
-  { label: "APIs", tone: "logic", zone: "backend", x: 0.82, y: 0.3, speed: 25, phase: 2.95 },
+  // LOGIC
+  { label: "Python", tone: "logic", zone: "backend", x: 0.74, y: 0.18, speed: 25, phase: 1.8 },
+  { label: "SQL", tone: "logic", zone: "backend", x: 0.86, y: 0.38, speed: 25, phase: 2.7 },
+  { label: "Django", tone: "logic", zone: "backend", x: 0.66, y: 0.30, speed: 25, phase: 2.2 },
+  { label: "APIs", tone: "logic", zone: "backend", x: 0.82, y: 0.26, speed: 25, phase: 2.95 },
+  { label: "Validation", tone: "logic", zone: "backend", x: 0.72, y: 0.40, speed: 25, phase: 2.4 },
 
-  { label: "CAD", tone: "media", zone: "media", x: 0.28, y: 0.78, speed: 25, phase: 3.4 },
-  { label: "Audio", tone: "media", zone: "media", x: 0.46, y: 0.87, speed: 25, phase: 4.1 },
-  { label: "Graphic", tone: "media", zone: "media", x: 0.18, y: 0.66, speed: 25, phase: 3.85 },
-  { label: "Video", tone: "media", zone: "media", x: 0.38, y: 0.68, speed: 25, phase: 4.45 },
+  // MEDIA
+  { label: "CAD", tone: "media", zone: "media", x: 0.24, y: 0.76, speed: 25, phase: 3.4 },
+  { label: "Audio", tone: "media", zone: "media", x: 0.42, y: 0.88, speed: 25, phase: 4.1 },
+  { label: "Graphic", tone: "media", zone: "media", x: 0.14, y: 0.66, speed: 25, phase: 3.85 },
+  { label: "Video", tone: "media", zone: "media", x: 0.34, y: 0.68, speed: 25, phase: 4.45 },
+  { label: "Drawing", tone: "media", zone: "media", x: 0.18, y: 0.54, speed: 25, phase: 3.45 },
 
-  { label: "Systems", tone: "engineering", zone: "engineering", x: 0.78, y: 0.82, speed: 25, phase: 4.9 },
-  { label: "Prototyping", tone: "engineering", zone: "engineering", x: 0.63, y: 0.9, speed: 25, phase: 5.5 },
-  { label: "Automation", tone: "engineering", zone: "engineering", x: 0.69, y: 0.7, speed: 25, phase: 5.05 },
-  { label: "Robotics", tone: "engineering", zone: "engineering", x: 0.86, y: 0.68, speed: 25, phase: 5.75 },
+  // ENGINEERING
+  { label: "Systems", tone: "engineering", zone: "engineering", x: 0.76, y: 0.82, speed: 25, phase: 4.9 },
+  { label: "Prototyping", tone: "engineering", zone: "engineering", x: 0.64, y: 0.92, speed: 25, phase: 5.5 },
+  { label: "Automation", tone: "engineering", zone: "engineering", x: 0.70, y: 0.68, speed: 25, phase: 5.05 },
+  { label: "Robotics", tone: "engineering", zone: "engineering", x: 0.86, y: 0.66, speed: 25, phase: 5.75 },
+  { label: "Mechatronics", tone: "engineering", zone: "engineering", x: 0.78, y: 0.90, speed: 25, phase: 4.2 },
 ];
 
 const zoneLabels = [
@@ -75,6 +83,7 @@ export default function Skills() {
   const sequenceStartTimeoutRef = useRef(null);
   const skipWheelCountRef = useRef(0);
   const skipWheelResetTimeoutRef = useRef(null);
+  const signalTimeoutsRef = useRef([]);
 
   useLayoutEffect(() => {
     let removeBadgeTicker = null;
@@ -86,6 +95,59 @@ export default function Skills() {
       const SKIP_SCROLL_COUNT = 4;
       const ACTIVATION_ZONE_PX = 80;
       const ACTIVATION_NEGATIVE_TOLERANCE = -40;
+      const clearSignalTimeouts = () => {
+        signalTimeoutsRef.current.forEach((timeoutId) => {
+          window.clearTimeout(timeoutId);
+        });
+        signalTimeoutsRef.current = [];
+      };
+
+      const stopRandomSignalLoop = () => {
+        clearSignalTimeouts();
+
+        gsap.utils.toArray(".skill-cluster__signal").forEach((el) => {
+          el.classList.remove("is-dropping");
+        });
+      };
+      const startRandomSignalLoop = () => {
+        clearSignalTimeouts();
+
+        const signals = gsap.utils.toArray(".skill-cluster__signal");
+
+        const scheduleNextDrop = (el) => {
+          const pause = gsap.utils.random(2100, 5500, 1);
+          const timeoutId = window.setTimeout(() => {
+            el.classList.remove("is-dropping");
+            void el.offsetWidth;
+            el.classList.add("is-dropping");
+
+            scheduleNextDrop(el);
+          }, pause);
+
+          signalTimeoutsRef.current.push(timeoutId);
+        };
+
+        signals.forEach((el) => {
+          const initialDelay = gsap.utils.random(0, 1600, 1);
+
+          const timeoutId = window.setTimeout(() => {
+            el.classList.remove("is-dropping");
+            void el.offsetWidth;
+            el.classList.add("is-dropping");
+
+            const handleAnimationEnd = () => {
+              el.classList.remove("is-dropping");
+              el.removeEventListener("animationend", handleAnimationEnd);
+            };
+
+            el.addEventListener("animationend", handleAnimationEnd, { once: true });
+
+            scheduleNextDrop(el);
+          }, initialDelay);
+
+          signalTimeoutsRef.current.push(timeoutId);
+        });
+      };
 
       const setHiddenState = () => {
         gsap.set(".skill-cluster", {
@@ -456,6 +518,7 @@ export default function Skills() {
 
       if (reduceMotion || !fieldRef.current || !coreRef.current) {
         return () => {
+          stopRandomSignalLoop();
           window.removeEventListener("wheel", wheelLockHandler);
           window.removeEventListener("touchmove", touchMoveLockHandler);
           window.removeEventListener("keydown", keyLockHandler);
@@ -463,6 +526,8 @@ export default function Skills() {
           window.clearTimeout(skipWheelResetTimeoutRef.current);
         };
       }
+
+      startRandomSignalLoop();
 
       const field = fieldRef.current;
       const core = coreRef.current;
@@ -833,6 +898,7 @@ export default function Skills() {
       gsap.ticker.add(updateBadges);
 
       removeBadgeTicker = () => {
+        stopRandomSignalLoop();
         gsap.ticker.remove(updateBadges);
         window.removeEventListener("resize", onResize);
         ScrollTrigger.removeEventListener("refreshInit", onResize);
@@ -878,21 +944,21 @@ export default function Skills() {
                   className={`skill-cluster skill-cluster--${group.accent}`}
                 >
                   <div className="skill-cluster__top">
-                    <span className="skill-cluster__label">{group.label}</span>
                     <span className="skill-cluster__signal" />
                   </div>
 
-                  <h3>{group.title}</h3>
+                  <h3 className={`skill-cluster__title skill-cluster__title--${group.accent}`}>
+                    {group.title}
+                  </h3>
                   <p>{group.text}</p>
                 </article>
               ))}
             </div>
 
             <div className="skills-visual">
-              <div className="skills-visual__noise" />
-              <div className="skills-visual__grid" />
-
               <div className="skills-field" ref={fieldRef}>
+                <div className="skills-visual__noise" />
+                <div className="skills-visual__grid" />
                 <div className="skills-field__divider skills-field__divider--vertical" />
                 <div className="skills-field__divider skills-field__divider--horizontal" />
 
