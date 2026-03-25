@@ -11,6 +11,34 @@ function clamp(value, min, max) {
     return Math.min(Math.max(value, min), max)
 }
 
+function dampVector(current, target, factor, maxStep = Infinity) {
+    const delta = target.clone().sub(current)
+    const scaled = delta.multiplyScalar(factor)
+
+    if (scaled.length() > maxStep) {
+        scaled.setLength(maxStep)
+    }
+
+    current.add(scaled)
+    return current
+}
+
+function findFirstExistingObject(root, names) {
+    for (const name of names) {
+        const obj = root.getObjectByName(name)
+        if (obj) return obj
+    }
+    return null
+}
+
+function findFirstExistingIndex(indexMap, names) {
+    for (const name of names) {
+        const index = indexMap.get(name)
+        if (typeof index === 'number') return index
+    }
+    return undefined
+}
+
 function Loader() {
     return null
 }
@@ -22,18 +50,29 @@ function SpiderRig({ cursorRef, onReady }) {
     const rootRef = useRef(null)
     const ikTargetRef = useRef(null)
     const ikTargetParentRef = useRef(null)
+    const effectorBoneRef = useRef(null)
+    const shoulderBoneRef = useRef(null)
     const solverRef = useRef(null)
 
-    const desiredWorldRef = useRef(new THREE.Vector3(-0.16, 0.02, 0.08))
-    const smoothWorldRef = useRef(new THREE.Vector3(-0.16, 0.02, 0.08))
+    const desiredWorldRef = useRef(new THREE.Vector3())
+    const smoothWorldRef = useRef(new THREE.Vector3())
+    const sideSignRef = useRef(-1)
+    const maxReachRef = useRef(0.22)
+    const isRigReadyRef = useRef(false)
 
     const raycaster = useMemo(() => new THREE.Raycaster(), [])
     const planeHit = useMemo(() => new THREE.Vector3(), [])
-
-    const interactionPlane = useMemo(
-        () => new THREE.Plane(new THREE.Vector3(0, 1, 0), -0.015),
-        []
-    )
+    const shoulderWorld = useMemo(() => new THREE.Vector3(), [])
+    const effectorWorld = useMemo(() => new THREE.Vector3(), [])
+    const bodyWorld = useMemo(() => new THREE.Vector3(), [])
+    const planeNormal = useMemo(() => new THREE.Vector3(), [])
+    const planeUp = useMemo(() => new THREE.Vector3(), [])
+    const planeRight = useMemo(() => new THREE.Vector3(), [])
+    const planeCenter = useMemo(() => new THREE.Vector3(), [])
+    const interactionPlane = useMemo(() => new THREE.Plane(), [])
+    const shoulderToCursor = useMemo(() => new THREE.Vector3(), [])
+    const clampedTarget = useMemo(() => new THREE.Vector3(), [])
+    const tempVec = useMemo(() => new THREE.Vector3(), [])
 
     const preparedModel = useMemo(() => {
         const cloned = clone(scene)
@@ -80,7 +119,6 @@ function SpiderRig({ cursorRef, onReady }) {
 
         const fittedBox = new THREE.Box3().setFromObject(rootRef.current)
         const fittedCenter = new THREE.Vector3()
-
         fittedBox.getCenter(fittedCenter)
 
         preparedModel.position.x -= fittedCenter.x
@@ -104,27 +142,74 @@ function SpiderRig({ cursorRef, onReady }) {
         const bones = skinnedMesh.skeleton.bones
         const boneIndexByName = new Map(bones.map((bone, index) => [bone.name, index]))
 
-        const targetName = 'IKTargetL002_03'
-        const effectorName = 'LegSegmentFL002_021'
-        const linkNames = [
-            'LegSegmentEL002_020',
-            'LegSegmentDL002_019',
-            'LegSegmentBL002_018',
-            'LegSegmentAL002_017',
+        const targetCandidates = [
+            'IKTargetL001_03',
+            'IKTargetFL001_03',
+            'IKTargetL002_03',
+            'IKTargetFL002_03',
         ]
 
-        const targetBone = preparedModel.getObjectByName(targetName)
+        const effectorCandidates = [
+            'LegSegmentFL001_021',
+            'LegSegmentL001_021',
+            'LegSegmentFL002_021',
+            'LegSegmentL002_021',
+        ]
+
+        const linkCandidateChains = [
+            [
+                'LegSegmentEL001_020',
+                'LegSegmentDL001_019',
+                'LegSegmentBL001_018',
+                'LegSegmentAL001_017',
+            ],
+            [
+                'LegSegmentEL002_020',
+                'LegSegmentDL002_019',
+                'LegSegmentBL002_018',
+                'LegSegmentAL002_017',
+            ],
+        ]
+
+        const targetBone = findFirstExistingObject(preparedModel, targetCandidates)
+        const effectorBone = findFirstExistingObject(preparedModel, effectorCandidates)
+
+        let chosenLinkNames = null
+        for (const chain of linkCandidateChains) {
+            const allExist = chain.every((name) => preparedModel.getObjectByName(name))
+            if (allExist) {
+                chosenLinkNames = chain
+                break
+            }
+        }
 
         if (targetBone?.parent) {
             ikTargetRef.current = targetBone
             ikTargetParentRef.current = targetBone.parent
         }
 
-        const targetIndex = boneIndexByName.get(targetName)
-        const effectorIndex = boneIndexByName.get(effectorName)
-        const linkIndices = linkNames
-            .map((name) => boneIndexByName.get(name))
-            .filter((index) => typeof index === 'number')
+        if (effectorBone) {
+            effectorBoneRef.current = effectorBone
+        }
+
+        if (chosenLinkNames?.length) {
+            const shoulderBone = preparedModel.getObjectByName(
+                chosenLinkNames[chosenLinkNames.length - 1]
+            )
+            if (shoulderBone) {
+                shoulderBoneRef.current = shoulderBone
+            }
+        }
+
+        const targetIndex = findFirstExistingIndex(boneIndexByName, targetCandidates)
+        const effectorIndex = findFirstExistingIndex(boneIndexByName, effectorCandidates)
+
+        let linkIndices = []
+        if (chosenLinkNames?.length) {
+            linkIndices = chosenLinkNames
+                .map((name) => boneIndexByName.get(name))
+                .filter((index) => typeof index === 'number')
+        }
 
         if (
             typeof targetIndex === 'number' &&
@@ -137,29 +222,52 @@ function SpiderRig({ cursorRef, onReady }) {
                     effector: effectorIndex,
                     iteration: 24,
                     minAngle: 0,
-                    maxAngle: Math.PI * 0.2,
+                    maxAngle: Math.PI * 0.28,
                     links: linkIndices.map((index, i) => ({
                         index,
                         enabled: true,
                         rotationMin: new THREE.Vector3(
-                            i === 0 ? -0.15 : -0.25,
-                            -0.55,
-                            -0.75
+                            i === 0 ? -0.35 : -0.55,
+                            -0.8,
+                            -0.85
                         ),
                         rotationMax: new THREE.Vector3(
-                            i === 0 ? 0.35 : 0.55,
-                            0.55,
-                            0.75
+                            i === 0 ? 0.55 : 0.75,
+                            0.8,
+                            0.85
                         ),
                     })),
                 },
             ])
         }
 
+        rootRef.current.updateMatrixWorld(true)
+        preparedModel.updateMatrixWorld(true)
+
+        if (shoulderBoneRef.current) {
+            shoulderBoneRef.current.getWorldPosition(shoulderWorld)
+        }
+
+        if (effectorBoneRef.current) {
+            effectorBoneRef.current.getWorldPosition(effectorWorld)
+            desiredWorldRef.current.copy(effectorWorld)
+            smoothWorldRef.current.copy(effectorWorld)
+        }
+
+        if (shoulderBoneRef.current && effectorBoneRef.current) {
+            const legLength = shoulderWorld.distanceTo(effectorWorld)
+            maxReachRef.current = legLength * 1.02
+
+            const dx = effectorWorld.x - shoulderWorld.x
+            sideSignRef.current = dx <= 0 ? -1 : 1
+        }
+
+        isRigReadyRef.current = true
         onReady?.()
     }, [onReady, preparedModel])
+
     useFrame(() => {
-        if (!rootRef.current) return
+        if (!rootRef.current || !isRigReadyRef.current) return
 
         rootRef.current.position.x = 0
         rootRef.current.position.y = -0.012
@@ -169,25 +277,79 @@ function SpiderRig({ cursorRef, onReady }) {
         rootRef.current.rotation.y = 0
         rootRef.current.rotation.z = 0
 
+        rootRef.current.updateMatrixWorld(true)
+
+        if (!shoulderBoneRef.current || !effectorBoneRef.current) return
+
+        shoulderBoneRef.current.getWorldPosition(shoulderWorld)
+        effectorBoneRef.current.getWorldPosition(effectorWorld)
+        rootRef.current.getWorldPosition(bodyWorld)
+
         const pointer = cursorRef.current || { x: 0, y: 0 }
+        const px = clamp(pointer.x, -1, 1)
+        const py = clamp(pointer.y, -1, 1)
 
-        const px = clamp(pointer.x, -0.9, 0.9)
-        const py = clamp(pointer.y, -0.85, 0.85)
+        camera.getWorldDirection(planeNormal).normalize()
+        planeUp.copy(camera.up).normalize()
+        planeRight.crossVectors(planeNormal, planeUp).normalize()
+        planeUp.crossVectors(planeRight, planeNormal).normalize()
 
-        desiredWorldRef.current.set(
-            clamp(-0.16 + px * 0.22, -0.42, 0.04),
-            clamp(0.02 + py * 0.1, -0.04, 0.16),
-            clamp(0.16 + (1 - (py + 1) * 0.5) * 0.08 + Math.abs(px) * 0.02, 0.08, 0.3)
-        )
+        planeCenter
+            .copy(shoulderWorld)
+            .addScaledVector(planeNormal, -maxReachRef.current * 0.72)
+            .addScaledVector(planeUp, maxReachRef.current * 0.18)
 
-        smoothWorldRef.current.lerp(desiredWorldRef.current, 0.2)
+        interactionPlane.setFromNormalAndCoplanarPoint(planeNormal, planeCenter)
+
+        raycaster.setFromCamera({ x: px, y: py }, camera)
+
+        if (raycaster.ray.intersectPlane(interactionPlane, planeHit)) {
+            const sideSign = sideSignRef.current
+            const bodyGap = 0.01
+
+            if (sideSign < 0) {
+                planeHit.x = Math.min(planeHit.x, bodyWorld.x - bodyGap)
+            } else {
+                planeHit.x = Math.max(planeHit.x, bodyWorld.x + bodyGap)
+            }
+
+            shoulderToCursor.copy(planeHit).sub(shoulderWorld)
+
+            const distanceToCursor = shoulderToCursor.length()
+            const maxReach = maxReachRef.current
+
+            if (distanceToCursor <= maxReach) {
+                clampedTarget.copy(planeHit)
+            } else {
+                shoulderToCursor.normalize()
+                clampedTarget
+                    .copy(shoulderWorld)
+                    .addScaledVector(shoulderToCursor, maxReach)
+            }
+
+            desiredWorldRef.current.copy(clampedTarget)
+        }
+
+        const distanceToDesired = smoothWorldRef.current.distanceTo(desiredWorldRef.current)
+        const maxReach = maxReachRef.current
+
+        if (distanceToDesired < maxReach * 0.08) {
+            smoothWorldRef.current.copy(desiredWorldRef.current)
+        } else {
+            dampVector(
+                smoothWorldRef.current,
+                desiredWorldRef.current,
+                0.18,
+                maxReach * 0.085
+            )
+        }
 
         if (ikTargetRef.current && ikTargetParentRef.current) {
             const localTarget = ikTargetParentRef.current.worldToLocal(
                 smoothWorldRef.current.clone()
             )
 
-            ikTargetRef.current.position.lerp(localTarget, 0.28)
+            ikTargetRef.current.position.copy(localTarget)
             ikTargetRef.current.updateMatrixWorld(true)
         }
 
