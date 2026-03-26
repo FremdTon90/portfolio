@@ -7,6 +7,17 @@ import * as THREE from 'three'
 
 const modelPath = `${import.meta.env.BASE_URL}models/spider.glb`
 
+const LEG_CONFIG = {
+    targetName: 'IKTargetR001_071',
+    effectorName: 'LegSegmentFR001_043',
+    linkNames: [
+        'LegSegmentER001_042',
+        'LegSegmentDR001_041',
+        'LegSegmentBR001_040',
+        'LegSegmentAR001_039',
+    ],
+}
+
 function clamp(value, min, max) {
     return Math.min(Math.max(value, min), max)
 }
@@ -21,22 +32,6 @@ function dampVector(current, target, factor, maxStep = Infinity) {
 
     current.add(scaled)
     return current
-}
-
-function findFirstExistingObject(root, names) {
-    for (const name of names) {
-        const obj = root.getObjectByName(name)
-        if (obj) return obj
-    }
-    return null
-}
-
-function findFirstExistingIndex(indexMap, names) {
-    for (const name of names) {
-        const index = indexMap.get(name)
-        if (typeof index === 'number') return index
-    }
-    return undefined
 }
 
 function Loader() {
@@ -56,9 +51,10 @@ function SpiderRig({ cursorRef, onReady }) {
 
     const desiredWorldRef = useRef(new THREE.Vector3())
     const smoothWorldRef = useRef(new THREE.Vector3())
-    const sideSignRef = useRef(-1)
+    const sideSignRef = useRef(1)
     const maxReachRef = useRef(0.22)
     const isRigReadyRef = useRef(false)
+    const modelPreparedRef = useRef(false)
 
     const raycaster = useMemo(() => new THREE.Raycaster(), [])
     const planeHit = useMemo(() => new THREE.Vector3(), [])
@@ -72,7 +68,6 @@ function SpiderRig({ cursorRef, onReady }) {
     const interactionPlane = useMemo(() => new THREE.Plane(), [])
     const shoulderToCursor = useMemo(() => new THREE.Vector3(), [])
     const clampedTarget = useMemo(() => new THREE.Vector3(), [])
-    const tempVec = useMemo(() => new THREE.Vector3(), [])
 
     const preparedModel = useMemo(() => {
         const cloned = clone(scene)
@@ -102,7 +97,7 @@ function SpiderRig({ cursorRef, onReady }) {
     }, [scene])
 
     useLayoutEffect(() => {
-        if (!rootRef.current) return
+        if (!rootRef.current || modelPreparedRef.current) return
 
         preparedModel.rotation.set(0, Math.PI, 0)
 
@@ -126,6 +121,19 @@ function SpiderRig({ cursorRef, onReady }) {
         preparedModel.position.y -= fittedBox.min.y
         preparedModel.updateMatrixWorld(true)
 
+        modelPreparedRef.current = true
+    }, [preparedModel])
+
+    useLayoutEffect(() => {
+        if (!rootRef.current) return
+
+        isRigReadyRef.current = false
+        solverRef.current = null
+        ikTargetRef.current = null
+        ikTargetParentRef.current = null
+        effectorBoneRef.current = null
+        shoulderBoneRef.current = null
+
         let skinnedMesh = null
 
         preparedModel.traverse((child) => {
@@ -139,135 +147,95 @@ function SpiderRig({ cursorRef, onReady }) {
             return
         }
 
-        const bones = skinnedMesh.skeleton.bones
-        const boneIndexByName = new Map(bones.map((bone, index) => [bone.name, index]))
-
-        const targetCandidates = [
-            'IKTargetL001_03',
-            'IKTargetFL001_03',
-            'IKTargetL002_03',
-            'IKTargetFL002_03',
-        ]
-
-        const effectorCandidates = [
-            'LegSegmentFL001_021',
-            'LegSegmentL001_021',
-            'LegSegmentFL002_021',
-            'LegSegmentL002_021',
-        ]
-
-        const linkCandidateChains = [
-            [
-                'LegSegmentEL001_020',
-                'LegSegmentDL001_019',
-                'LegSegmentBL001_018',
-                'LegSegmentAL001_017',
-            ],
-            [
-                'LegSegmentEL002_020',
-                'LegSegmentDL002_019',
-                'LegSegmentBL002_018',
-                'LegSegmentAL002_017',
-            ],
-        ]
-
-        const targetBone = findFirstExistingObject(preparedModel, targetCandidates)
-        const effectorBone = findFirstExistingObject(preparedModel, effectorCandidates)
-
-        let chosenLinkNames = null
-        for (const chain of linkCandidateChains) {
-            const allExist = chain.every((name) => preparedModel.getObjectByName(name))
-            if (allExist) {
-                chosenLinkNames = chain
-                break
-            }
-        }
-
-        if (targetBone?.parent) {
-            ikTargetRef.current = targetBone
-            ikTargetParentRef.current = targetBone.parent
-        }
-
-        if (effectorBone) {
-            effectorBoneRef.current = effectorBone
-        }
-
-        if (chosenLinkNames?.length) {
-            const shoulderBone = preparedModel.getObjectByName(
-                chosenLinkNames[chosenLinkNames.length - 1]
-            )
-            if (shoulderBone) {
-                shoulderBoneRef.current = shoulderBone
-            }
-        }
-
-        const targetIndex = findFirstExistingIndex(boneIndexByName, targetCandidates)
-        const effectorIndex = findFirstExistingIndex(boneIndexByName, effectorCandidates)
-
-        let linkIndices = []
-        if (chosenLinkNames?.length) {
-            linkIndices = chosenLinkNames
-                .map((name) => boneIndexByName.get(name))
-                .filter((index) => typeof index === 'number')
-        }
-
-        if (
-            typeof targetIndex === 'number' &&
-            typeof effectorIndex === 'number' &&
-            linkIndices.length > 0
-        ) {
-            solverRef.current = new CCDIKSolver(skinnedMesh, [
-                {
-                    target: targetIndex,
-                    effector: effectorIndex,
-                    iteration: 24,
-                    minAngle: 0,
-                    maxAngle: Math.PI * 0.28,
-                    links: linkIndices.map((index, i) => ({
-                        index,
-                        enabled: true,
-                        rotationMin: new THREE.Vector3(
-                            i === 0 ? -0.35 : -0.55,
-                            -0.8,
-                            -0.85
-                        ),
-                        rotationMax: new THREE.Vector3(
-                            i === 0 ? 0.55 : 0.75,
-                            0.8,
-                            0.85
-                        ),
-                    })),
-                },
-            ])
-        }
-
         rootRef.current.updateMatrixWorld(true)
         preparedModel.updateMatrixWorld(true)
 
-        if (shoulderBoneRef.current) {
-            shoulderBoneRef.current.getWorldPosition(shoulderWorld)
+        const ikTarget = preparedModel.getObjectByName(LEG_CONFIG.targetName)
+        const effectorBone = preparedModel.getObjectByName(LEG_CONFIG.effectorName)
+        const shoulderBone = preparedModel.getObjectByName(
+            LEG_CONFIG.linkNames[LEG_CONFIG.linkNames.length - 1]
+        )
+
+        const bones = skinnedMesh.skeleton.bones
+        const boneIndexByName = new Map(bones.map((bone, index) => [bone.name, index]))
+
+        const targetIndex = boneIndexByName.get(LEG_CONFIG.targetName)
+        const effectorIndex = boneIndexByName.get(LEG_CONFIG.effectorName)
+        const linkIndices = LEG_CONFIG.linkNames
+            .map((name) => boneIndexByName.get(name))
+            .filter((index) => typeof index === 'number')
+
+        console.log('[Spider right-front debug]', {
+            config: LEG_CONFIG,
+            hasTarget: !!ikTarget,
+            hasTargetParent: !!ikTarget?.parent,
+            hasEffector: !!effectorBone,
+            hasShoulder: !!shoulderBone,
+            targetIndex,
+            effectorIndex,
+            linkIndices,
+        })
+
+        if (
+            !ikTarget ||
+            !ikTarget.parent ||
+            !effectorBone ||
+            !shoulderBone ||
+            typeof targetIndex !== 'number' ||
+            typeof effectorIndex !== 'number' ||
+            linkIndices.length !== LEG_CONFIG.linkNames.length
+        ) {
+            onReady?.()
+            return
         }
 
-        if (effectorBoneRef.current) {
-            effectorBoneRef.current.getWorldPosition(effectorWorld)
-            desiredWorldRef.current.copy(effectorWorld)
-            smoothWorldRef.current.copy(effectorWorld)
-        }
+        ikTargetRef.current = ikTarget
+        ikTargetParentRef.current = ikTarget.parent
+        effectorBoneRef.current = effectorBone
+        shoulderBoneRef.current = shoulderBone
 
-        if (shoulderBoneRef.current && effectorBoneRef.current) {
-            const legLength = shoulderWorld.distanceTo(effectorWorld)
-            maxReachRef.current = legLength * 1.02
+        solverRef.current = new CCDIKSolver(skinnedMesh, [
+            {
+                target: targetIndex,
+                effector: effectorIndex,
+                iteration: 24,
+                minAngle: 0,
+                maxAngle: Math.PI * 0.28,
+                links: linkIndices.map((index, i) => ({
+                    index,
+                    enabled: true,
+                    rotationMin: new THREE.Vector3(
+                        i === 0 ? -0.35 : -0.55,
+                        -0.8,
+                        -0.85
+                    ),
+                    rotationMax: new THREE.Vector3(
+                        i === 0 ? 0.55 : 0.75,
+                        0.8,
+                        0.85
+                    ),
+                })),
+            },
+        ])
 
-            const dx = effectorWorld.x - shoulderWorld.x
-            sideSignRef.current = dx <= 0 ? -1 : 1
-        }
+        shoulderBoneRef.current.getWorldPosition(shoulderWorld)
+        effectorBoneRef.current.getWorldPosition(effectorWorld)
+
+        desiredWorldRef.current.copy(effectorWorld)
+        smoothWorldRef.current.copy(effectorWorld)
+
+        const legLength = shoulderWorld.distanceTo(effectorWorld)
+        maxReachRef.current = legLength * 1.02
+
+        const dx = effectorWorld.x - shoulderWorld.x
+        sideSignRef.current = dx <= 0 ? -1 : 1
 
         isRigReadyRef.current = true
         onReady?.()
-    }, [onReady, preparedModel])
+    }, [onReady, preparedModel, shoulderWorld, effectorWorld])
 
     useFrame(() => {
-        if (!rootRef.current || !isRigReadyRef.current) return
+        if (!rootRef.current) return
 
         rootRef.current.position.x = 0
         rootRef.current.position.y = -0.012
@@ -276,9 +244,11 @@ function SpiderRig({ cursorRef, onReady }) {
         rootRef.current.rotation.x = 0
         rootRef.current.rotation.y = 0
         rootRef.current.rotation.z = 0
-
+        rootRef.current.visible = true
         rootRef.current.updateMatrixWorld(true)
 
+        if (!isRigReadyRef.current) return
+        if (!ikTargetRef.current || !ikTargetParentRef.current) return
         if (!shoulderBoneRef.current || !effectorBoneRef.current) return
 
         shoulderBoneRef.current.getWorldPosition(shoulderWorld)
@@ -300,7 +270,6 @@ function SpiderRig({ cursorRef, onReady }) {
             .addScaledVector(planeUp, maxReachRef.current * 0.18)
 
         interactionPlane.setFromNormalAndCoplanarPoint(planeNormal, planeCenter)
-
         raycaster.setFromCamera({ x: px, y: py }, camera)
 
         if (raycaster.ray.intersectPlane(interactionPlane, planeHit)) {
@@ -344,14 +313,12 @@ function SpiderRig({ cursorRef, onReady }) {
             )
         }
 
-        if (ikTargetRef.current && ikTargetParentRef.current) {
-            const localTarget = ikTargetParentRef.current.worldToLocal(
-                smoothWorldRef.current.clone()
-            )
+        const localTarget = ikTargetParentRef.current.worldToLocal(
+            smoothWorldRef.current.clone()
+        )
 
-            ikTargetRef.current.position.copy(localTarget)
-            ikTargetRef.current.updateMatrixWorld(true)
-        }
+        ikTargetRef.current.position.copy(localTarget)
+        ikTargetRef.current.updateMatrixWorld(true)
 
         if (solverRef.current) {
             solverRef.current.update()

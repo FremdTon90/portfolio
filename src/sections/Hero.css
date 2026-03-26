@@ -89,7 +89,7 @@
     position: absolute;
     left: 50%;
     top: clamp(250px, 40vh, 400px);
-    z-index: 8;
+    z-index: 101;
     display: flex;
     justify-content: center;
     gap: 16px;
@@ -132,7 +132,7 @@
     right: 0;
     bottom: 0;
     height: clamp(220px, 34vh, 360px);
-    z-index: 5;
+    z-index: 100;
     pointer-events: none;
     opacity: 0;
     transition: opacity 0.3s ease;
