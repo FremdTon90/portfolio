@@ -28,24 +28,22 @@ const DEBUG_SETTINGS = {
     },
 
     targetFollow: {
+        // bleibt erstmal drin, aber wird für das IKTarget nicht mehr benutzt
         smoothing: 0.38,
-        snapDistance: 0.0008,
-        planeDepthFactor: 0.72,
-        planeUpFactor: 0.18,
+        snapDistance: 0.08,
+        planeDepthFactor: 0.5,
+        planeUpFactor: 100,
         maxReachMultiplier: 0.96,
+
+        // oben voller Offset, unten keiner mehr
+        targetWorldYOffsetTop: 0.29,
+        targetWorldYOffsetBottom: -0.05,
     },
 
     shoulderAim: {
         enabled: true,
-
-        // HIER TESTEST DU DIE ACHSE:
-        // 'x' | 'y' | 'z'
         axis: 'y',
-
-        // 1 oder -1
         sign: 1,
-
-        // wie stark die manuelle Vor-Ausrichtung wirkt
         blend: 0.1,
     },
 
@@ -429,39 +427,25 @@ function SpiderRig({ cursorRef, onReady }) {
         raycaster.setFromCamera({ x: px, y: py }, camera)
 
         if (raycaster.ray.intersectPlane(interactionPlane, planeHit)) {
+            const normalizedScreenY = (py + 1) * 0.5
+            const dynamicYOffset = THREE.MathUtils.lerp(
+                DEBUG_SETTINGS.targetFollow.targetWorldYOffsetBottom,
+                DEBUG_SETTINGS.targetFollow.targetWorldYOffsetTop,
+                normalizedScreenY
+            )
+
+            planeHit.y += dynamicYOffset
+
             debugCursorWorldRef.current.copy(planeHit)
 
-            shoulderToTarget.copy(planeHit).sub(shoulderWorld)
-            const distance = shoulderToTarget.length()
-            const maxReach = maxReachRef.current
+            desiredWorldRef.current.copy(planeHit)
+            smoothWorldRef.current.copy(planeHit)
 
-            if (distance > maxReach) {
-                shoulderToTarget.normalize()
-                clampedTarget.copy(shoulderWorld).addScaledVector(shoulderToTarget, maxReach)
-            } else {
-                clampedTarget.copy(planeHit)
-            }
-
-            desiredWorldRef.current.copy(clampedTarget)
+            localTarget.copy(planeHit)
+            ikTargetParentRef.current.worldToLocal(localTarget)
+            ikTargetRef.current.position.copy(localTarget)
+            ikTargetRef.current.updateMatrixWorld(true)
         }
-
-        const distanceToDesired = smoothWorldRef.current.distanceTo(desiredWorldRef.current)
-
-        if (distanceToDesired < DEBUG_SETTINGS.targetFollow.snapDistance) {
-            smoothWorldRef.current.copy(desiredWorldRef.current)
-        } else {
-            dampVector(
-                smoothWorldRef.current,
-                desiredWorldRef.current,
-                DEBUG_SETTINGS.targetFollow.smoothing,
-                maxReachRef.current * 0.18
-            )
-        }
-
-        localTarget.copy(smoothWorldRef.current)
-        ikTargetParentRef.current.worldToLocal(localTarget)
-        ikTargetRef.current.position.copy(localTarget)
-        ikTargetRef.current.updateMatrixWorld(true)
 
         if (
             DEBUG_SETTINGS.shoulderAim.enabled &&

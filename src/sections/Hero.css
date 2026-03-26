@@ -5,7 +5,8 @@
     padding: clamp(28px, 4vw, 40px) 0 clamp(44px, 5vw, 56px);
     background: radial-gradient(circle at 18% 16%, rgba(103, 232, 249, 0.08), transparent 26%), radial-gradient(circle at 82% 12%, rgba(139, 92, 246, 0.07), transparent 24%), linear-gradient(180deg, #03050d 0%, #050816 58%, #07101f 100%);
     isolation: isolate;
-    overflow: hidden;
+    overflow-x: hidden;
+    overflow-y: visible;
 }
 
 .hero::before {
@@ -52,6 +53,7 @@
     position: relative;
     min-height: calc(100svh - 150px);
     padding-top: clamp(72px, 11vh, 132px);
+    overflow: visible;
 }
 
 .hero-bg-title {
@@ -131,10 +133,11 @@
     left: 0;
     right: 0;
     bottom: 0;
-    height: clamp(220px, 34vh, 360px);
-    z-index: 100;
+    height: clamp(320px, 48vh, 520px);
+    z-index: 1000;
     pointer-events: none;
     opacity: 0;
+    overflow: visible;
     transition: opacity 0.3s ease;
 }
 
