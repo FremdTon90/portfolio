@@ -22,56 +22,61 @@ const DEBUG_SETTINGS = {
   targetHeight: 0.00385,
 
   bodyPosition: {
-    x: -0.35,
-    y: -0.145,
+    x: -0.58,
+    y: -0.0145,
     z: 0.2,
   },
 
   bodyRotation: {
     x: 0,
-    y: -0.22,
+    y: -0.28,
     z: 0,
   },
 
   abdomenMotion: {
     enabled: true,
-    positionYAmplitude: 0.00075,
-    positionYSpeed: 1.1,
-    rotationXAmplitude: 0.045,
+    positionYAmplitude: 0.00135,
+    positionYSpeed: 1.15,
+    rotationXAmplitude: 0.075,
     rotationXSpeed: 1.05,
-    rotationZAmplitude: 0.02,
+    rotationZAmplitude: 0.03,
     rotationZSpeed: 0.8,
+    scalePulseAmplitude: 0.018,
+    scalePulseSpeed: 1.2,
   },
 
   targetFollow: {
-    idleMoveSmoothing: 0.03,
-    moveSmoothing: 0.055,
-    pressSmoothing: 0.075,
-    returnSmoothing: 0.045,
-    planeDepthFactor: 0.46,
-    planeUpFactor: 100,
+    idleDamping: 6.8,
+    hoverDamping: 5.6,
+    moveDamping: 5.0,
+    pressDamping: 4.2,
+    returnDamping: 5.6,
+    planeDepthFactor: 0.36,
+    planeUpFactor: 58,
     maxReachMultiplier: 0.98,
-    targetWorldYOffsetTop: 0.24,
-    targetWorldYOffsetBottom: -0.01,
-    pressWorldYOffset: -0.018,
+    targetWorldYOffsetTop: 0.11,
+    targetWorldYOffsetBottom: 0.03,
+    pressWorldYOffset: -0.014,
+    targetDeadzone: 0.0009,
   },
 
   shoulderAim: {
     enabled: true,
     axis: 'x',
-    sign: 1,
-    blend: 0.085,
+    sign: -1,
+    blend: 0.045,
+    maxTurnRadians: 0.42,
     forwardOffsetEuler: {
-      x: 0.08,
-      y: -0.28,
-      z: 0.2,
+      x: 0,
+      y: 0,
+      z: 0,
     },
   },
 
   solver: {
-    iterations: 28,
+    iterations: 18,
     minAngle: 0,
-    maxAngle: Math.PI * 0.3,
+    maxAngle: Math.PI * 0.28,
   },
 }
 
@@ -87,6 +92,10 @@ function getLocalAimAxis(axis, sign) {
 
 function Loader() {
   return null
+}
+
+function dampFactor(lambda, delta) {
+  return 1 - Math.exp(-lambda * delta)
 }
 
 function getChainReach(shoulderBone, linkBones, effectorBone) {
@@ -129,9 +138,10 @@ function SpiderRig({ interactionRef, onReady }) {
   const linkBonesRef = useRef([])
   const solverRef = useRef(null)
 
+  const rawTargetWorldRef = useRef(new THREE.Vector3())
   const desiredWorldRef = useRef(new THREE.Vector3())
   const smoothWorldRef = useRef(new THREE.Vector3())
-  const homeWorldRef = useRef(new THREE.Vector3())
+  const previousModeRef = useRef('idle')
 
   const maxReachRef = useRef(0.22)
   const isRigReadyRef = useRef(false)
@@ -140,6 +150,7 @@ function SpiderRig({ interactionRef, onReady }) {
   const abdomenNodeRef = useRef(null)
   const abdomenBasePositionRef = useRef(null)
   const abdomenBaseQuaternionRef = useRef(null)
+  const abdomenBaseScaleRef = useRef(null)
 
   const raycaster = useMemo(() => new THREE.Raycaster(), [])
   const planeHit = useMemo(() => new THREE.Vector3(), [])
@@ -151,6 +162,7 @@ function SpiderRig({ interactionRef, onReady }) {
   const planeCenter = useMemo(() => new THREE.Vector3(), [])
   const interactionPlane = useMemo(() => new THREE.Plane(), [])
   const localTarget = useMemo(() => new THREE.Vector3(), [])
+  const clampedDirectionWorld = useMemo(() => new THREE.Vector3(), [])
 
   const shoulderWorldQuaternion = useMemo(() => new THREE.Quaternion(), [])
   const shoulderParentWorldQuaternion = useMemo(() => new THREE.Quaternion(), [])
@@ -260,6 +272,7 @@ function SpiderRig({ interactionRef, onReady }) {
     if (abdomenNodeRef.current) {
       abdomenBasePositionRef.current = abdomenNodeRef.current.position.clone()
       abdomenBaseQuaternionRef.current = abdomenNodeRef.current.quaternion.clone()
+      abdomenBaseScaleRef.current = abdomenNodeRef.current.scale.clone()
     }
 
     modelPreparedRef.current = true
@@ -341,14 +354,14 @@ function SpiderRig({ interactionRef, onReady }) {
           index,
           enabled: true,
           rotationMin: new THREE.Vector3(
-            i === 0 ? -0.35 : -0.55,
-            -0.8,
-            -0.85
+            i === 0 ? -0.3 : -0.5,
+            -0.78,
+            -0.82
           ),
           rotationMax: new THREE.Vector3(
-            i === 0 ? 0.55 : 0.75,
-            0.8,
-            0.85
+            i === 0 ? 0.62 : 0.68,
+            0.78,
+            0.82
           ),
         })),
       },
@@ -357,9 +370,9 @@ function SpiderRig({ interactionRef, onReady }) {
     shoulderBoneRef.current.getWorldPosition(shoulderWorld)
     effectorBoneRef.current.getWorldPosition(effectorWorld)
 
+    rawTargetWorldRef.current.copy(effectorWorld)
     desiredWorldRef.current.copy(effectorWorld)
     smoothWorldRef.current.copy(effectorWorld)
-    homeWorldRef.current.copy(effectorWorld)
 
     const chainReach = getChainReach(
       shoulderBoneRef.current,
@@ -375,7 +388,7 @@ function SpiderRig({ interactionRef, onReady }) {
     onReady?.()
   }, [onReady, preparedModel])
 
-  useFrame(() => {
+  useFrame((_, delta) => {
     if (!rootRef.current) return
 
     rootRef.current.position.set(
@@ -395,9 +408,13 @@ function SpiderRig({ interactionRef, onReady }) {
       DEBUG_SETTINGS.abdomenMotion.enabled &&
       abdomenNodeRef.current &&
       abdomenBasePositionRef.current &&
-      abdomenBaseQuaternionRef.current
+      abdomenBaseQuaternionRef.current &&
+      abdomenBaseScaleRef.current
     ) {
       const elapsed = clock.getElapsedTime()
+      const pulse =
+        Math.sin(elapsed * DEBUG_SETTINGS.abdomenMotion.scalePulseSpeed) *
+        DEBUG_SETTINGS.abdomenMotion.scalePulseAmplitude
 
       abdomenNodeRef.current.position.copy(abdomenBasePositionRef.current)
       abdomenNodeRef.current.position.y +=
@@ -416,6 +433,10 @@ function SpiderRig({ interactionRef, onReady }) {
 
       abdomenNodeRef.current.quaternion.copy(abdomenBaseQuaternionRef.current)
       abdomenNodeRef.current.quaternion.multiply(abdomenOffsetQuaternion)
+
+      abdomenNodeRef.current.scale.copy(abdomenBaseScaleRef.current)
+      abdomenNodeRef.current.scale.multiplyScalar(1 + pulse)
+
       abdomenNodeRef.current.updateMatrixWorld(true)
     }
 
@@ -436,60 +457,67 @@ function SpiderRig({ interactionRef, onReady }) {
     const py = clamp(interaction.y ?? 0, -1, 1)
     const pressAmount = clamp(interaction.press ?? 0, 0, 1)
 
-    if (interaction.mode === 'moving' || interaction.mode === 'pressing') {
-      camera.getWorldDirection(planeNormal).normalize()
-      planeUp.copy(camera.up).normalize()
-      planeRight.crossVectors(planeNormal, planeUp).normalize()
-      planeUp.crossVectors(planeRight, planeNormal).normalize()
+    camera.getWorldDirection(planeNormal).normalize()
+    planeUp.copy(camera.up).normalize()
+    planeRight.crossVectors(planeNormal, planeUp).normalize()
+    planeUp.crossVectors(planeRight, planeNormal).normalize()
 
-      planeCenter
-        .copy(shoulderWorld)
-        .addScaledVector(
-          planeNormal,
-          -maxReachRef.current * DEBUG_SETTINGS.targetFollow.planeDepthFactor
-        )
-        .addScaledVector(
-          planeUp,
-          maxReachRef.current * DEBUG_SETTINGS.targetFollow.planeUpFactor
-        )
+    planeCenter
+      .copy(shoulderWorld)
+      .addScaledVector(
+        planeNormal,
+        -maxReachRef.current * DEBUG_SETTINGS.targetFollow.planeDepthFactor
+      )
+      .addScaledVector(
+        planeUp,
+        maxReachRef.current * DEBUG_SETTINGS.targetFollow.planeUpFactor
+      )
 
-      interactionPlane.setFromNormalAndCoplanarPoint(planeNormal, planeCenter)
-      raycaster.setFromCamera({ x: px, y: py }, camera)
+    interactionPlane.setFromNormalAndCoplanarPoint(planeNormal, planeCenter)
+    raycaster.setFromCamera({ x: px, y: py }, camera)
 
-      if (raycaster.ray.intersectPlane(interactionPlane, planeHit)) {
-        const normalizedScreenY = (py + 1) * 0.5
-        const dynamicYOffset = THREE.MathUtils.lerp(
-          DEBUG_SETTINGS.targetFollow.targetWorldYOffsetBottom,
-          DEBUG_SETTINGS.targetFollow.targetWorldYOffsetTop,
-          normalizedScreenY
-        )
+    if (raycaster.ray.intersectPlane(interactionPlane, planeHit)) {
+      const normalizedScreenY = (py + 1) * 0.5
+      const dynamicYOffset = THREE.MathUtils.lerp(
+        DEBUG_SETTINGS.targetFollow.targetWorldYOffsetBottom,
+        DEBUG_SETTINGS.targetFollow.targetWorldYOffsetTop,
+        normalizedScreenY
+      )
 
-        desiredWorldRef.current.copy(planeHit)
-        desiredWorldRef.current.y +=
-          dynamicYOffset + DEBUG_SETTINGS.targetFollow.pressWorldYOffset * pressAmount
-      }
-    } else {
-      desiredWorldRef.current.copy(homeWorldRef.current)
+      rawTargetWorldRef.current.copy(planeHit)
+      rawTargetWorldRef.current.y +=
+        dynamicYOffset + DEBUG_SETTINGS.targetFollow.pressWorldYOffset * pressAmount
     }
 
-    let smoothing = DEBUG_SETTINGS.targetFollow.idleMoveSmoothing
+    previousModeRef.current = interaction.mode
+    desiredWorldRef.current.copy(rawTargetWorldRef.current)
 
-    if (interaction.mode === 'moving') {
-      smoothing = DEBUG_SETTINGS.targetFollow.moveSmoothing
+    let damping = DEBUG_SETTINGS.targetFollow.idleDamping
+
+    if (interaction.mode === 'hovering') {
+      damping = DEBUG_SETTINGS.targetFollow.hoverDamping
+    } else if (interaction.mode === 'moving') {
+      damping = DEBUG_SETTINGS.targetFollow.moveDamping
     } else if (interaction.mode === 'pressing') {
-      smoothing = DEBUG_SETTINGS.targetFollow.pressSmoothing
+      damping = DEBUG_SETTINGS.targetFollow.pressDamping
     } else if (interaction.mode === 'returning') {
-      smoothing = DEBUG_SETTINGS.targetFollow.returnSmoothing
+      damping = DEBUG_SETTINGS.targetFollow.returnDamping
     }
 
-    smoothWorldRef.current.lerp(desiredWorldRef.current, smoothing)
+    smoothWorldRef.current.lerp(
+      desiredWorldRef.current,
+      dampFactor(damping, delta)
+    )
 
     localTarget.copy(smoothWorldRef.current)
     ikTargetParentRef.current.worldToLocal(localTarget)
     ikTargetRef.current.position.copy(localTarget)
     ikTargetRef.current.updateMatrixWorld(true)
 
-    if (DEBUG_SETTINGS.shoulderAim.enabled && shoulderBoneRef.current.parent) {
+    const shouldAimShoulder =
+      DEBUG_SETTINGS.shoulderAim.enabled && interaction.mode !== 'idle'
+
+    if (shouldAimShoulder && shoulderBoneRef.current.parent) {
       shoulderBoneRef.current.parent.updateWorldMatrix(true, false)
 
       desiredDirectionWorld.copy(smoothWorldRef.current).sub(shoulderWorld)
@@ -502,9 +530,19 @@ function SpiderRig({ interactionRef, onReady }) {
         aimAxisWorld.copy(aimAxisLocal).applyQuaternion(shoulderWorldQuaternion).normalize()
         currentDirectionWorld.copy(aimAxisWorld)
 
+        const angleToDesired = currentDirectionWorld.angleTo(desiredDirectionWorld)
+        const maxTurn = DEBUG_SETTINGS.shoulderAim.maxTurnRadians
+        const blendToClamped =
+          angleToDesired > 0.0001 ? Math.min(1, maxTurn / angleToDesired) : 1
+
+        clampedDirectionWorld
+          .copy(currentDirectionWorld)
+          .lerp(desiredDirectionWorld, blendToClamped)
+          .normalize()
+
         desiredWorldQuaternion.setFromUnitVectors(
           currentDirectionWorld,
-          desiredDirectionWorld
+          clampedDirectionWorld
         )
 
         const currentWorldQuaternion = shoulderWorldQuaternion.clone()
@@ -520,7 +558,7 @@ function SpiderRig({ interactionRef, onReady }) {
 
         shoulderBoneRef.current.quaternion.slerp(
           desiredLocalQuaternion,
-          DEBUG_SETTINGS.shoulderAim.blend
+          dampFactor(DEBUG_SETTINGS.shoulderAim.blend * 60, delta)
         )
 
         shoulderBoneRef.current.updateMatrixWorld(true)
@@ -544,7 +582,7 @@ function SceneCamera() {
 
   useLayoutEffect(() => {
     camera.position.set(0, 0.64, 3.18)
-    camera.lookAt(-0.04, 0.02, 0.08)
+    camera.lookAt(-0.22, 0.02, 0.08)
     camera.near = 0.01
     camera.far = 100
     camera.updateProjectionMatrix()

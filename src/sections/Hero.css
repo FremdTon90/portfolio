@@ -89,20 +89,21 @@
 
 .hero-action-panel {
     position: absolute;
-    left: clamp(56px, 5.4vw, 104px);
+    left: clamp(18px, 2.2vw, 34px);
     top: clamp(250px, 35vh, 350px);
     z-index: 40;
-    width: min(300px, calc(100% - 2 * var(--hero-side)));
+    width: min(290px, calc(100% - 2 * var(--hero-side)));
 }
 
 .hero-button-column {
     display: flex;
     flex-direction: column;
     align-items: flex-start;
-    gap: 12px;
+    gap: 30px;
 }
 
 .hero-button {
+    left: -35%;
     position: relative;
     display: inline-flex;
     align-items: center;
@@ -172,8 +173,8 @@
 
 .hero-spider-wrap {
     position: absolute;
-    left: -4%;
-    right: -24%;
+    left: -18%;
+    right: -14%;
     bottom: clamp(-6px, 1vh, 12px);
     height: clamp(360px, 52vh, 560px);
     z-index: 10;
@@ -224,13 +225,16 @@
         font-size: clamp(3.8rem, 12vw, 8rem);
     }
     .hero-action-panel {
-        left: clamp(34px, 4vw, 58px);
+        left: clamp(14px, 2.2vw, 24px);
         top: clamp(265px, 37vh, 375px);
-        width: min(270px, calc(100% - 2 * var(--hero-side)));
+        width: min(260px, calc(100% - 2 * var(--hero-side)));
+    }
+    .hero-button-column {
+        gap: 16px;
     }
     .hero-spider-wrap {
-        left: -6%;
-        right: -28%;
+        left: -24%;
+        right: -18%;
         bottom: -6px;
         height: clamp(290px, 40vh, 430px);
     }
@@ -266,6 +270,7 @@
     }
     .hero-button-column {
         width: 100%;
+        gap: 14px;
     }
     .hero-button {
         width: 100%;
@@ -274,10 +279,10 @@
     }
     .hero-spider-wrap {
         position: relative;
-        left: -10%;
-        right: -10%;
+        left: -16%;
+        right: -16%;
         bottom: auto;
-        width: 120%;
+        width: 132%;
         height: clamp(220px, 30vh, 280px);
         margin-top: 18px;
     }
