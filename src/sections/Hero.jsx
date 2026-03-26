@@ -2,76 +2,18 @@ import { useEffect, useMemo, useRef, useState } from 'react'
 import SpiderHeroScene from './SpiderHeroScene'
 import './Hero.css'
 
-const BUTTON_TARGET_CONFIG = {
-  idle: {
-    x: -0.35,
-    y: -0.15,
-  },
-
-  quickfacts: {
-    offsetX: 0.05,
-    offsetY: 0.42,
-  },
-
-  skills: {
-    offsetX: 0.05,
-    offsetY: 0.25,
-  },
-
-  projects: {
-    offsetX: 0.1,
-    offsetY: 0.11,
-  },
-
-  showcase: {
-    offsetX: 0.1,
-    offsetY: 0.05,
-  },
-
-  contact: {
-    offsetX: 0.1,
-    offsetY: -0.1,
-  },
-}
-
 const sectionLinks = [
-  {
-    id: 'hero-link-0',
-    key: 'quickfacts',
-    label: 'Quick Facts',
-    href: '#quickfacts',
-    primary: true,
-  },
-  {
-    id: 'hero-link-1',
-    key: 'skills',
-    label: 'Skills',
-    href: '#skills',
-  },
-  {
-    id: 'hero-link-2',
-    key: 'projects',
-    label: 'Projects',
-    href: '#projects',
-  },
-  {
-    id: 'hero-link-3',
-    key: 'showcase',
-    label: 'Showcase',
-    href: '#showcase',
-  },
-  {
-    id: 'hero-link-4',
-    key: 'contact',
-    label: 'Kontakt',
-    href: '#contact',
-  },
+  { label: 'Quick Facts', href: '#quickfacts', primary: true },
+  { label: 'Skills', href: '#skills' },
+  { label: 'Projects', href: '#projects' },
+  { label: 'Showcase', href: '#showcase' },
+  { label: 'Kontakt', href: '#contact' },
 ]
 
 const HOME_INTERACTION = {
   mode: 'idle',
-  x: BUTTON_TARGET_CONFIG.idle.x,
-  y: BUTTON_TARGET_CONFIG.idle.y,
+  x: 0,
+  y: 0,
   press: 0,
   changedAt: 0,
 }
@@ -91,35 +33,25 @@ function getElementCenterNormalized(element) {
   }
 }
 
-function getButtonTarget(link, element) {
-  const center = getElementCenterNormalized(element)
-  const config = BUTTON_TARGET_CONFIG[link.key] || { offsetX: 0, offsetY: 0 }
-
-  return {
-    x: clamp(center.x + (config.offsetX ?? 0), -1, 1),
-    y: clamp(center.y + (config.offsetY ?? 0), -1, 1),
-  }
-}
-
 export default function Hero() {
   const buttonRefs = useRef(new Map())
   const interactionRef = useRef(HOME_INTERACTION)
   const animationTimeoutsRef = useRef([])
-  const hoveredButtonIdRef = useRef(null)
-  const lastHoveredButtonIdRef = useRef(null)
 
   const [sceneReady, setSceneReady] = useState(false)
   const [isAnimatingPress, setIsAnimatingPress] = useState(false)
   const [pressedButtonId, setPressedButtonId] = useState(null)
 
-  const linksWithIds = useMemo(() => sectionLinks, [])
+  const linksWithIds = useMemo(
+    () =>
+      sectionLinks.map((link, index) => ({
+        ...link,
+        id: `hero-link-${index}`,
+      })),
+    []
+  )
 
   useEffect(() => {
-    interactionRef.current = {
-      ...HOME_INTERACTION,
-      changedAt: performance.now(),
-    }
-
     return () => {
       animationTimeoutsRef.current.forEach((timeoutId) => window.clearTimeout(timeoutId))
     }
@@ -145,94 +77,22 @@ export default function Hero() {
     window.location.hash = href
   }
 
-  const aimSpiderAtButton = (link, mode = 'hovering') => {
-    const buttonElement = buttonRefs.current.get(link.id)
-
-    if (!buttonElement) return
-
-    const normalized = getButtonTarget(link, buttonElement)
-
-    interactionRef.current = {
-      mode,
-      x: normalized.x,
-      y: normalized.y,
-      press: 0,
-      changedAt: performance.now(),
-    }
-  }
-
-  const resetSpiderToIdle = () => {
-    interactionRef.current = {
-      mode: 'idle',
-      x: BUTTON_TARGET_CONFIG.idle.x,
-      y: BUTTON_TARGET_CONFIG.idle.y,
-      press: 0,
-      changedAt: performance.now(),
-    }
-  }
-
-  const getLinkById = (buttonId) => {
-    return linksWithIds.find((link) => link.id === buttonId) || null
-  }
-
-  const handleButtonEnter = (link) => {
-    hoveredButtonIdRef.current = link.id
-    lastHoveredButtonIdRef.current = link.id
-
-    if (isAnimatingPress) return
-
-    aimSpiderAtButton(link, 'hovering')
-  }
-
-  const handleButtonLeave = (buttonId) => {
-    if (hoveredButtonIdRef.current === buttonId) {
-      hoveredButtonIdRef.current = null
-    }
-  }
-
-  const handleButtonColumnLeave = () => {
-    hoveredButtonIdRef.current = null
-
-    if (isAnimatingPress) return
-
-    const lastHoveredButtonId = lastHoveredButtonIdRef.current
-    const lastHoveredLink = lastHoveredButtonId ? getLinkById(lastHoveredButtonId) : null
-
-    if (lastHoveredLink) {
-      aimSpiderAtButton(lastHoveredLink, 'hovering')
-      return
-    }
-
-    resetSpiderToIdle()
-  }
-
-  const handleHeroStageLeave = () => {
-    hoveredButtonIdRef.current = null
-    lastHoveredButtonIdRef.current = null
-
-    if (isAnimatingPress) return
-
-    resetSpiderToIdle()
-  }
-
-  const triggerSpiderPress = (href, link) => {
-    const buttonElement = buttonRefs.current.get(link.id)
+  const triggerSpiderPress = (href, buttonId) => {
+    const buttonElement = buttonRefs.current.get(buttonId)
 
     if (!buttonElement) {
       runNavigation(href)
       return
     }
 
-    const normalized = getButtonTarget(link, buttonElement)
+    const normalized = getElementCenterNormalized(buttonElement)
 
     clearAnimationTimeouts()
     setIsAnimatingPress(true)
-    setPressedButtonId(link.id)
-    hoveredButtonIdRef.current = link.id
-    lastHoveredButtonIdRef.current = link.id
+    setPressedButtonId(buttonId)
 
     interactionRef.current = {
-      mode: 'hovering',
+      mode: 'moving',
       x: normalized.x,
       y: normalized.y,
       press: 0,
@@ -248,7 +108,7 @@ export default function Hero() {
           press: 1,
           changedAt: performance.now(),
         }
-      }, 120)
+      }, 430)
     )
 
     animationTimeoutsRef.current.push(
@@ -261,38 +121,28 @@ export default function Hero() {
           changedAt: performance.now(),
         }
         setPressedButtonId(null)
-      }, 420)
+      }, 840)
     )
 
     animationTimeoutsRef.current.push(
       window.setTimeout(() => {
-        const hoveredButtonId = hoveredButtonIdRef.current
-        const lastHoveredButtonId = lastHoveredButtonIdRef.current
-
-        const hoveredLink = hoveredButtonId ? getLinkById(hoveredButtonId) : null
-        const lastHoveredLink = lastHoveredButtonId ? getLinkById(lastHoveredButtonId) : null
-
-        if (hoveredLink) {
-          aimSpiderAtButton(hoveredLink, 'hovering')
-        } else if (lastHoveredLink) {
-          aimSpiderAtButton(lastHoveredLink, 'hovering')
-        } else {
-          resetSpiderToIdle()
+        interactionRef.current = {
+          ...HOME_INTERACTION,
+          changedAt: performance.now(),
         }
-
         setIsAnimatingPress(false)
         setPressedButtonId(null)
         runNavigation(href)
-      }, 760)
+      }, 1320)
     )
   }
 
-  const handleButtonClick = (event, link) => {
+  const handleButtonClick = (event, href, buttonId) => {
     event.preventDefault()
 
     if (isAnimatingPress) return
 
-    triggerSpiderPress(link.href, link)
+    triggerSpiderPress(href, buttonId)
   }
 
   return (
@@ -304,7 +154,7 @@ export default function Hero() {
           <span className="hero-badge">CAD + Creative Tech</span>
         </div>
 
-        <div className="hero-stage" onMouseLeave={handleHeroStageLeave}>
+        <div className="hero-stage">
           <div className="hero-bg-title">
             <span className="hero-bg-line">Dustin</span>
             <span className="hero-bg-line">
@@ -316,7 +166,7 @@ export default function Hero() {
           </div>
 
           <div className="hero-action-panel">
-            <div className="hero-button-column" onMouseLeave={handleButtonColumnLeave}>
+            <div className="hero-button-column">
               {linksWithIds.map((link) => {
                 const isPressed = pressedButtonId === link.id
 
@@ -332,11 +182,7 @@ export default function Hero() {
                     }}
                     className={`hero-button${link.primary ? ' primary' : ''}${isAnimatingPress ? ' is-busy' : ''}${isPressed ? ' is-spider-pressing' : ''}`}
                     href={link.href}
-                    onMouseEnter={() => handleButtonEnter(link)}
-                    onMouseLeave={() => handleButtonLeave(link.id)}
-                    onFocus={() => handleButtonEnter(link)}
-                    onBlur={() => handleButtonLeave(link.id)}
-                    onClick={(event) => handleButtonClick(event, link)}
+                    onClick={(event) => handleButtonClick(event, link.href, link.id)}
                   >
                     <span className="hero-button-label">{link.label}</span>
                   </a>
