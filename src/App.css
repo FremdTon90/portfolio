@@ -30,6 +30,89 @@ main {
     min-height: 100vh;
 }
 
+.app-shell {
+    opacity: 0;
+    transition: opacity 0.45s ease;
+}
+
+.app-shell.is-ready {
+    opacity: 1;
+}
+
+.app-loader {
+    position: fixed;
+    inset: 0;
+    z-index: 9999;
+    display: grid;
+    place-items: center;
+    overflow: hidden;
+    background: linear-gradient(180deg, #03050d 0%, #050816 58%, #07101f 100%);
+}
+
+.app-loader__backdrop {
+    position: absolute;
+    inset: 0;
+    background: radial-gradient(circle at 22% 18%, rgba(103, 232, 249, 0.12), transparent 28%), radial-gradient(circle at 78% 14%, rgba(139, 92, 246, 0.12), transparent 24%), radial-gradient(circle at 50% 78%, rgba(96, 165, 250, 0.1), transparent 30%);
+    filter: blur(8px);
+    animation: appLoaderBackdropFloat 5.2s ease-in-out infinite alternate;
+}
+
+.app-loader__content {
+    position: relative;
+    z-index: 2;
+    width: min(520px, calc(100% - 2rem));
+    padding: 32px 26px;
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    border-radius: 28px;
+    background: rgba(7, 12, 25, 0.72);
+    backdrop-filter: blur(18px);
+    box-shadow: 0 22px 64px rgba(0, 0, 0, 0.38), 0 0 0 1px rgba(255, 255, 255, 0.02) inset;
+    text-align: center;
+}
+
+.app-loader__eyebrow {
+    margin-bottom: 12px;
+    color: rgba(103, 232, 249, 0.9);
+    font-size: 0.8rem;
+    font-weight: 700;
+    letter-spacing: 0.18em;
+    text-transform: uppercase;
+}
+
+.app-loader__title {
+    margin-bottom: 22px;
+    color: #eff4ff;
+    font-size: clamp(1.4rem, 2.6vw, 2.2rem);
+    font-weight: 800;
+    line-height: 1.08;
+    letter-spacing: -0.03em;
+}
+
+.app-loader__bar {
+    position: relative;
+    height: 10px;
+    margin-bottom: 16px;
+    overflow: hidden;
+    border-radius: 999px;
+    background: rgba(255, 255, 255, 0.08);
+}
+
+.app-loader__bar-fill {
+    position: absolute;
+    inset: 0;
+    width: 42%;
+    border-radius: inherit;
+    background: linear-gradient(90deg, rgba(103, 232, 249, 0.95), rgba(96, 165, 250, 0.95), rgba(139, 92, 246, 0.95));
+    box-shadow: 0 0 20px rgba(103, 232, 249, 0.28);
+    animation: appLoaderBarMove 1.25s ease-in-out infinite;
+}
+
+.app-loader__hint {
+    color: #b8c7e8;
+    font-size: 0.96rem;
+    letter-spacing: 0.01em;
+}
+
 h1,
 h2,
 h3,
@@ -149,6 +232,24 @@ section {
     font-size: 0.98rem;
 }
 
+@keyframes appLoaderBackdropFloat {
+    0% {
+        transform: scale(1) translate3d(0, 0, 0);
+    }
+    100% {
+        transform: scale(1.04) translate3d(0, -10px, 0);
+    }
+}
+
+@keyframes appLoaderBarMove {
+    0% {
+        transform: translateX(-110%);
+    }
+    100% {
+        transform: translateX(310%);
+    }
+}
+
 
 /* --------------------------------------------------
    RESPONSIVE
@@ -167,5 +268,15 @@ section {
 @media (max-width: 640px) {
     #quickfacts {
         padding: 4rem 1rem;
+    }
+    .app-loader__content {
+        padding: 26px 18px;
+        border-radius: 22px;
+    }
+    .app-loader__title {
+        font-size: 1.35rem;
+    }
+    .app-loader__hint {
+        font-size: 0.9rem;
     }
 }

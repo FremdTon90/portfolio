@@ -123,7 +123,7 @@ function getButtonTarget(link, element) {
   }
 }
 
-export default function Hero() {
+export default function Hero({ onNavigationStart, onSceneReady }) {
   const buttonRefs = useRef(new Map())
   const interactionRef = useRef(HOME_INTERACTION)
   const hoveredButtonIdRef = useRef(null)
@@ -153,18 +153,20 @@ export default function Hero() {
   }, [])
 
   const runNavigation = (href) => {
-    const target = document.querySelector(href)
+    onNavigationStart?.()
 
-    if (target) {
-      target.scrollIntoView({
-        behavior: 'smooth',
-        block: 'start',
+    window.requestAnimationFrame(() => {
+      window.requestAnimationFrame(() => {
+        const target = document.querySelector(href)
+
+        if (target) {
+          target.scrollIntoView({
+            behavior: 'smooth',
+            block: 'start',
+          })
+        }
       })
-      window.history.replaceState(null, '', href)
-      return
-    }
-
-    window.location.hash = href
+    })
   }
 
   const aimSpiderAtButton = (link, mode = 'hovering') => {
@@ -275,7 +277,6 @@ export default function Hero() {
     let shouldImpact = false
 
     if (elapsed <= windupEnd) {
-      const t = clamp(elapsed / windupEnd, 0, 1)
       mode = 'hovering'
       press = 0
       nextPhase = 'windup'
@@ -444,6 +445,11 @@ export default function Hero() {
     triggerSpiderPress(link.href, link)
   }
 
+  const handleSceneReady = () => {
+    setSceneReady(true)
+    onSceneReady?.()
+  }
+
   return (
     <section className="hero" id="hero">
       <div className="hero-inner">
@@ -498,7 +504,7 @@ export default function Hero() {
           <div className={`hero-spider-wrap${sceneReady ? ' is-ready' : ''}`}>
             <SpiderHeroScene
               interactionRef={interactionRef}
-              onReady={() => setSceneReady(true)}
+              onReady={handleSceneReady}
             />
           </div>
         </div>
