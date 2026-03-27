@@ -1,6 +1,8 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import './App.css'
+import './components/AppLoader.css'
 
+import ScrollDirector from './components/ScrollDirector'
 import Hero from './sections/Hero'
 import QuickFacts from './sections/QuickFacts'
 import Skills from './sections/Skills'
@@ -10,7 +12,6 @@ import Contact from './sections/Contact'
 
 const LOADER_WAIT_DURATION = 1000
 const LOADER_PLAY_DURATION = 2000
-const LOADER_FLASH_DURATION = 320
 const LOADER_FRAME_COUNT = 120
 
 function drawRoundedRectPath(ctx, x, y, width, height, radius) {
@@ -363,6 +364,15 @@ function App() {
     }
   }, [getCleanBaseUrl, reloadToBaseUrl])
 
+  const sections = [
+    { id: 'hero' },
+    { id: 'quickfacts' },
+    { id: 'skills' },
+    { id: 'projects' },
+    { id: 'showcase' },
+    { id: 'contact' },
+  ]
+
   return (
     <>
       {isLoaderVisible ? (
@@ -374,18 +384,28 @@ function App() {
         />
       ) : null}
 
-      <main className={`app-shell${appReady ? ' is-ready' : ''}`}>
-        <Hero
-          key={`hero-${sectionResetKey}`}
-          onNavigationStart={handleHeroNavigationStart}
-        />
+      <ScrollDirector sections={sections}>
+        {({ activeSectionId, navigateToSection }) => (
+          <main className={`app-shell${appReady ? ' is-ready' : ''}`}>
+            <Hero
+              key={`hero-${sectionResetKey}`}
+              onNavigationStart={handleHeroNavigationStart}
+              navigateToSection={navigateToSection}
+            />
 
-        <QuickFacts key={`quickfacts-${sectionResetKey}`} />
-        <Skills key={`skills-${sectionResetKey}`} />
-        <Projects key={`projects-${sectionResetKey}`} />
-        <Showcase key={`showcase-${sectionResetKey}`} />
-        <Contact key={`contact-${sectionResetKey}`} />
-      </main>
+            <QuickFacts
+              key={`quickfacts-${sectionResetKey}`}
+              isActive={activeSectionId === 'quickfacts'}
+              navigateToSection={navigateToSection}
+            />
+
+            <Skills key={`skills-${sectionResetKey}`} />
+            <Projects key={`projects-${sectionResetKey}`} />
+            <Showcase key={`showcase-${sectionResetKey}`} />
+            <Contact key={`contact-${sectionResetKey}`} />
+          </main>
+        )}
+      </ScrollDirector>
     </>
   )
 }

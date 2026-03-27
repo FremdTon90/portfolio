@@ -123,7 +123,7 @@ function getButtonTarget(link, element) {
   }
 }
 
-export default function Hero({ onNavigationStart, onSceneReady }) {
+export default function Hero({ onNavigationStart, onSceneReady, navigateToSection }) {
   const buttonRefs = useRef(new Map())
   const interactionRef = useRef(HOME_INTERACTION)
   const hoveredButtonIdRef = useRef(null)
@@ -154,6 +154,15 @@ export default function Hero({ onNavigationStart, onSceneReady }) {
 
   const runNavigation = (href) => {
     onNavigationStart?.()
+
+    const targetId = href.startsWith('#') ? href.slice(1) : href
+
+    if (targetId && navigateToSection) {
+      navigateToSection(targetId, {
+        mode: 'navLock',
+      })
+      return
+    }
 
     window.requestAnimationFrame(() => {
       window.requestAnimationFrame(() => {

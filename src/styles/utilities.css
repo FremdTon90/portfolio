@@ -1,0 +1,27 @@
+.section-shell {
+    position: relative;
+    width: 100%;
+    border-bottom: 1px solid var(--line);
+    overflow: clip;
+}
+
+.section-label,
+.section-kicker {
+    display: inline-flex;
+    width: fit-content;
+    margin-bottom: 20px;
+    padding: 8px 14px;
+    border: 1px solid rgba(103, 232, 249, 0.22);
+    border-radius: 999px;
+    background: rgba(103, 232, 249, 0.08);
+    color: var(--cyan);
+    font-size: 0.82rem;
+    font-weight: 600;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    backdrop-filter: blur(14px);
+}
+
+.section-copy {
+    max-width: 760px;
+}

@@ -1,126 +1,83 @@
-import { useEffect, useRef } from 'react'
-import { gsap } from 'gsap'
-import { ScrollTrigger } from 'gsap/ScrollTrigger'
+import SectionFrame from '../components/SectionFrame'
+import './QuickFacts.css'
 
-gsap.registerPlugin(ScrollTrigger)
+const quickFactCards = [
+  {
+    title: 'Frontend + UX',
+    text: 'Interfaces mit klarer Dramaturgie, sauberem Aufbau und Interaktion, die nicht zufällig wirkt, sondern geführt.',
+  },
+  {
+    title: 'Fullstack + APIs',
+    text: 'Logik, Datenflüsse, Backend-Strukturen und Tools, die nicht nur von vorne gut aussehen, sondern hinten auch nicht brennen.',
+  },
+  {
+    title: '3D + Motion',
+    text: 'Realtime-Szenen, inszenierte Übergänge, technische Animation und Interfaces, die sich nach Experience anfühlen.',
+  },
+  {
+    title: 'CAD + Engineering',
+    text: 'Technisches Verständnis, Konstruktion, räumliches Denken und Präzision als echter Bonus für digitale Projekte.',
+  },
+  {
+    title: 'Automation',
+    text: 'Wiederholbare Prozesse, Integrationen und Systeme, die nervige Arbeit wegräumen und Produktivität sauber erhöhen.',
+  },
+  {
+    title: 'Audio + Creative Tech',
+    text: 'Sound, Rhythmus, Timing und Wirkung. Nicht immer sichtbar, aber oft genau der Unterschied zwischen nett und stark.',
+  },
+  {
+    title: 'Systemisches Denken',
+    text: 'Ich denke selten nur in Komponenten. Meistens denke ich schon in Verhalten, Abhängigkeiten, Zuständen und Wirkung.',
+  },
+  {
+    title: 'High-End Detailarbeit',
+    text: 'Das Ziel ist nicht einfach nur “funktioniert”, sondern “fühlt sich hochwertig an, bevor man es überhaupt erklären muss”.',
+  },
+]
 
-export default function QuickFacts() {
-  const sectionRef = useRef(null)
-  const labelRef = useRef(null)
-  const titleRef = useRef(null)
-  const copyRef = useRef(null)
-  const cardsRef = useRef([])
-
-  useEffect(() => {
-    const ctx = gsap.context(() => {
-      gsap.set([labelRef.current, titleRef.current, copyRef.current], {
-        opacity: 0,
-        y: 40,
-      })
-
-      gsap.set(cardsRef.current, {
-        opacity: 0,
-        y: 60,
-        scale: 0.96,
-      })
-
-      const timeline = gsap.timeline({
-        scrollTrigger: {
-          trigger: sectionRef.current,
-          start: 'top 75%',
-        },
-      })
-
-      timeline
-        .to(labelRef.current, {
-          opacity: 1,
-          y: 0,
-          duration: 0.6,
-          ease: 'power3.out',
-        })
-        .to(
-          titleRef.current,
-          {
-            opacity: 1,
-            y: 0,
-            duration: 0.8,
-            ease: 'power3.out',
-          },
-          '-=0.35'
-        )
-        .to(
-          copyRef.current,
-          {
-            opacity: 1,
-            y: 0,
-            duration: 0.7,
-            ease: 'power3.out',
-          },
-          '-=0.45'
-        )
-        .to(
-          cardsRef.current,
-          {
-            opacity: 1,
-            y: 0,
-            scale: 1,
-            duration: 0.7,
-            stagger: 0.12,
-            ease: 'power3.out',
-          },
-          '-=0.3'
-        )
-    }, sectionRef)
-
-    return () => ctx.revert()
-  }, [])
-
+export default function QuickFacts({ isActive, navigateToSection }) {
   return (
-    <section ref={sectionRef} id="quickfacts">
-      <span ref={labelRef} className="section-label">
-        Quick Facts
-      </span>
+    <SectionFrame
+      sectionId="quickfacts"
+      isActive={isActive}
+      exitIntentEnabled
+      showExitUi
+      previousSectionId="hero"
+      nextSectionId="skills"
+      navigateToSection={navigateToSection}
+    >
+      <div className="quickfacts-shell section-shell">
+        <div className="quickfacts-hero">
+          <span className="section-label">Quick Facts</span>
 
-      <div className="section-copy">
-        <h2 ref={titleRef}>Erst Eindruck. Dann Substanz.</h2>
-        <p ref={copyRef}>
-          Mein Fokus liegt auf Frontend und starken Nutzererlebnissen. Gleichzeitig
-          bringe ich Designverständnis, CAD-Erfahrung und technisches Breitenwissen
-          mit — also nicht nur Pixel schubsen, sondern Denken in Systemen.
-        </p>
-      </div>
+          <div className="section-copy">
+            <h2>Ich baue nicht einfach Webseiten. Ich baue Verhalten.</h2>
+            <p>
+              Diese Section reagiert jetzt in beide Richtungen bewusst. Der Hinweis erscheint
+              erst dann, wenn du an der Kante wirklich weiter scrollst — nicht einfach nur,
+              weil du gerade in der Nähe bist.
+            </p>
+          </div>
+        </div>
 
-      <div className="quickfacts-grid">
-        {[
-          {
-            title: 'Fokus',
-            text: 'Frontend Development, visuelle Interfaces und moderne Web-Erlebnisse.',
-          },
-          {
-            title: 'Zusatzstärke',
-            text: 'CAD, Design, Audio und technische Vielseitigkeit über mehrere Disziplinen.',
-          },
-          {
-            title: 'Ziel',
-            text: 'Portfolio-Showcase mit klarer Story, starkem Eindruck und recruiter-tauglicher Struktur.',
-          },
-          {
-            title: 'Status',
-            text: 'Available for work · Deutschland heute, Dänemark perspektivisch.',
-          },
-        ].map((item, index) => (
-          <article
-            key={item.title}
-            ref={(element) => {
-              cardsRef.current[index] = element
-            }}
-            className="quickfact-card"
-          >
-            <h3>{item.title}</h3>
-            <p>{item.text}</p>
-          </article>
-        ))}
+        <div className="quickfacts-grid">
+          {quickFactCards.map((card) => (
+            <article key={card.title} className="quickfact-card">
+              <h3>{card.title}</h3>
+              <p>{card.text}</p>
+            </article>
+          ))}
+        </div>
+
+        <div className="quickfacts-tail">
+          <div className="quickfacts-tail__line" />
+          <p>
+            Unten kein versehentliches Weiterkippen. Oben kein hektisches Zurückspringen.
+            Beides soll später gleich hochwertig wirken.
+          </p>
+        </div>
       </div>
-    </section>
+    </SectionFrame>
   )
 }

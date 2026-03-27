@@ -1,0 +1,84 @@
+#quickfacts {
+    min-height: 100svh;
+    background: radial-gradient(circle at 50% 0%, rgba(103, 232, 249, 0.08), transparent 34%), linear-gradient(180deg, rgba(4, 6, 14, 0.98) 0%, rgba(5, 8, 22, 1) 100%);
+}
+
+.quickfacts-shell {
+    min-height: 160svh;
+    padding: 7rem 10% 6rem;
+    border-bottom: 1px solid var(--line);
+}
+
+.quickfacts-hero {
+    display: flex;
+    flex-direction: column;
+    gap: 18px;
+    margin-bottom: 42px;
+}
+
+.quickfacts-grid {
+    position: relative;
+    z-index: 2;
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 18px;
+    width: min(1040px, 100%);
+}
+
+.quickfact-card {
+    position: relative;
+    min-height: 220px;
+    padding: 22px;
+    border-radius: 24px;
+    background: linear-gradient(180deg, rgba(9, 14, 28, 0.88), rgba(7, 11, 24, 0.74));
+    border: 1px solid rgba(255, 255, 255, 0.06);
+    box-shadow: 0 18px 44px rgba(0, 0, 0, 0.24), 0 0 0 1px rgba(255, 255, 255, 0.02) inset;
+    backdrop-filter: blur(16px);
+    transition: transform 0.35s ease, border-color 0.35s ease, box-shadow 0.35s ease;
+}
+
+.quickfact-card:hover {
+    transform: translateY(-4px);
+    border-color: rgba(103, 232, 249, 0.16);
+    box-shadow: 0 22px 56px rgba(0, 0, 0, 0.28), 0 0 0 1px rgba(103, 232, 249, 0.04) inset, 0 0 30px rgba(103, 232, 249, 0.05);
+}
+
+.quickfact-card h3 {
+    margin-bottom: 12px;
+}
+
+.quickfact-card p {
+    max-width: none;
+}
+
+.quickfacts-tail {
+    display: flex;
+    flex-direction: column;
+    gap: 18px;
+    width: min(760px, 100%);
+    margin-top: 56px;
+    padding-top: 18px;
+}
+
+.quickfacts-tail__line {
+    width: min(180px, 30vw);
+    height: 1px;
+    background: linear-gradient(90deg, rgba(103, 232, 249, 0.7), transparent);
+}
+
+.quickfacts-tail p {
+    color: #c9d4ec;
+}
+
+@media (max-width: 980px) {
+    .quickfacts-shell {
+        min-height: 180svh;
+        padding: 5rem 1rem 5rem;
+    }
+    .quickfacts-grid {
+        grid-template-columns: 1fr;
+    }
+    .quickfact-card {
+        min-height: auto;
+    }
+}
