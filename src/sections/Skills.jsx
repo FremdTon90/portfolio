@@ -33,33 +33,29 @@ const skillGroups = [
 ];
 
 const floatingSkills = [
-  // UI
   { label: "React", tone: "ui", zone: "frontend", x: 0.22, y: 0.18, speed: 25, phase: 0.2 },
   { label: "Vite", tone: "ui", zone: "frontend", x: 0.14, y: 0.38, speed: 25, phase: 1.1 },
-  { label: "HTML", tone: "ui", zone: "frontend", x: 0.30, y: 0.26, speed: 25, phase: 0.75 },
-  { label: "CSS", tone: "ui", zone: "frontend", x: 0.10, y: 0.26, speed: 25, phase: 1.45 },
-  { label: "JavaScript", tone: "ui", zone: "frontend", x: 0.26, y: 0.40, speed: 25, phase: 0.95 },
+  { label: "HTML", tone: "ui", zone: "frontend", x: 0.3, y: 0.26, speed: 25, phase: 0.75 },
+  { label: "CSS", tone: "ui", zone: "frontend", x: 0.1, y: 0.26, speed: 25, phase: 1.45 },
+  { label: "JavaScript", tone: "ui", zone: "frontend", x: 0.26, y: 0.4, speed: 25, phase: 0.95 },
 
-  // LOGIC
   { label: "Python", tone: "logic", zone: "backend", x: 0.74, y: 0.18, speed: 25, phase: 1.8 },
   { label: "SQL", tone: "logic", zone: "backend", x: 0.86, y: 0.38, speed: 25, phase: 2.7 },
-  { label: "Django", tone: "logic", zone: "backend", x: 0.66, y: 0.30, speed: 25, phase: 2.2 },
+  { label: "Django", tone: "logic", zone: "backend", x: 0.66, y: 0.3, speed: 25, phase: 2.2 },
   { label: "APIs", tone: "logic", zone: "backend", x: 0.82, y: 0.26, speed: 25, phase: 2.95 },
-  { label: "Validation", tone: "logic", zone: "backend", x: 0.72, y: 0.40, speed: 25, phase: 2.4 },
+  { label: "Validation", tone: "logic", zone: "backend", x: 0.72, y: 0.4, speed: 25, phase: 2.4 },
 
-  // MEDIA
   { label: "CAD", tone: "media", zone: "media", x: 0.24, y: 0.76, speed: 25, phase: 3.4 },
   { label: "Audio", tone: "media", zone: "media", x: 0.42, y: 0.88, speed: 25, phase: 4.1 },
   { label: "Graphic", tone: "media", zone: "media", x: 0.14, y: 0.66, speed: 25, phase: 3.85 },
   { label: "Video", tone: "media", zone: "media", x: 0.34, y: 0.68, speed: 25, phase: 4.45 },
   { label: "Drawing", tone: "media", zone: "media", x: 0.18, y: 0.54, speed: 25, phase: 3.45 },
 
-  // ENGINEERING
   { label: "Systems", tone: "engineering", zone: "engineering", x: 0.76, y: 0.82, speed: 25, phase: 4.9 },
   { label: "Prototyping", tone: "engineering", zone: "engineering", x: 0.64, y: 0.92, speed: 25, phase: 5.5 },
-  { label: "Automation", tone: "engineering", zone: "engineering", x: 0.70, y: 0.68, speed: 25, phase: 5.05 },
+  { label: "Automation", tone: "engineering", zone: "engineering", x: 0.7, y: 0.68, speed: 25, phase: 5.05 },
   { label: "Robotics", tone: "engineering", zone: "engineering", x: 0.86, y: 0.66, speed: 25, phase: 5.75 },
-  { label: "Mechatronics", tone: "engineering", zone: "engineering", x: 0.78, y: 0.90, speed: 25, phase: 4.2 },
+  { label: "Mechatronics", tone: "engineering", zone: "engineering", x: 0.78, y: 0.9, speed: 25, phase: 4.2 },
 ];
 
 const zoneLabels = [
@@ -68,6 +64,19 @@ const zoneLabels = [
   { label: "Media", tone: "media", posClass: "bottom-left" },
   { label: "Engineering", tone: "engineering", posClass: "bottom-right" },
 ];
+
+function isDirectorLocked() {
+  return document.documentElement.hasAttribute("data-scroll-director-lock");
+}
+
+function isSkillsReallyActive(sectionElement) {
+  if (!sectionElement) return false;
+
+  const rect = sectionElement.getBoundingClientRect();
+  const vh = window.innerHeight;
+
+  return rect.top <= 72 && rect.bottom > vh * 0.45;
+}
 
 export default function Skills() {
   const sectionRef = useRef(null);
@@ -91,10 +100,12 @@ export default function Skills() {
     const ctx = gsap.context(() => {
       const reduceMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
       const isDesktop = () => window.matchMedia("(min-width: 1081px)").matches;
+
       const HEADER_SNAP_OFFSET = 10;
       const SKIP_SCROLL_COUNT = 4;
       const ACTIVATION_ZONE_PX = 80;
       const ACTIVATION_NEGATIVE_TOLERANCE = -40;
+
       const clearSignalTimeouts = () => {
         signalTimeoutsRef.current.forEach((timeoutId) => {
           window.clearTimeout(timeoutId);
@@ -109,6 +120,7 @@ export default function Skills() {
           el.classList.remove("is-dropping");
         });
       };
+
       const startRandomSignalLoop = () => {
         clearSignalTimeouts();
 
@@ -116,11 +128,11 @@ export default function Skills() {
 
         const scheduleNextDrop = (el) => {
           const pause = gsap.utils.random(2100, 5500, 1);
+
           const timeoutId = window.setTimeout(() => {
             el.classList.remove("is-dropping");
             void el.offsetWidth;
             el.classList.add("is-dropping");
-
             scheduleNextDrop(el);
           }, pause);
 
@@ -141,7 +153,6 @@ export default function Skills() {
             };
 
             el.addEventListener("animationend", handleAnimationEnd, { once: true });
-
             scheduleNextDrop(el);
           }, initialDelay);
 
@@ -209,8 +220,15 @@ export default function Skills() {
         resetSkipCounter();
       };
 
+      const canSkillsTakeControl = () => {
+        if (isDirectorLocked()) return false;
+        if (!isDesktop()) return false;
+        return isSkillsReallyActive(sectionRef.current);
+      };
+
       const snapToSkillsTop = () => {
         if (!headerRef.current) return;
+        if (!canSkillsTakeControl()) return;
 
         const targetY = Math.round(
           window.scrollY + headerRef.current.getBoundingClientRect().top - HEADER_SNAP_OFFSET
@@ -239,6 +257,7 @@ export default function Skills() {
       const resetSequence = () => {
         window.clearTimeout(sequenceStartTimeoutRef.current);
         window.clearTimeout(skipWheelResetTimeoutRef.current);
+
         unlockSequenceScroll();
         hasPlayedRef.current = false;
 
@@ -251,6 +270,7 @@ export default function Skills() {
 
       const playSequence = () => {
         if (!sequenceTlRef.current || hasPlayedRef.current) return;
+        if (!canSkillsTakeControl()) return;
 
         hasPlayedRef.current = true;
         lockSequenceScroll();
@@ -264,11 +284,17 @@ export default function Skills() {
         });
 
         sequenceStartTimeoutRef.current = window.setTimeout(() => {
+          if (!canSkillsTakeControl()) {
+            unlockSequenceScroll();
+            return;
+          }
+
           sequenceTlRef.current.play(0);
         }, 460);
       };
 
       const wheelLockHandler = (event) => {
+        if (isDirectorLocked()) return;
         if (!isDesktop()) return;
 
         const rect = sectionRef.current?.getBoundingClientRect();
@@ -296,7 +322,8 @@ export default function Skills() {
         const enteringFromStory =
           !hasPlayedRef.current &&
           event.deltaY > 0 &&
-          isAtActivationEdge;
+          isAtActivationEdge &&
+          canSkillsTakeControl();
 
         if (enteringFromStory) {
           event.preventDefault();
@@ -306,6 +333,7 @@ export default function Skills() {
       };
 
       const touchMoveLockHandler = (event) => {
+        if (isDirectorLocked()) return;
         if (!isDesktop()) return;
 
         if (isSequenceLockedRef.current) {
@@ -316,6 +344,7 @@ export default function Skills() {
       };
 
       const keyLockHandler = (event) => {
+        if (isDirectorLocked()) return;
         if (!isDesktop()) return;
         if (!isSequenceLockedRef.current) return;
 
@@ -345,15 +374,18 @@ export default function Skills() {
         start: "top 22%",
         end: "top top",
         onEnter: () => {
-          if (!isDesktop() || hasPlayedRef.current) return;
+          if (!canSkillsTakeControl()) return;
+          if (hasPlayedRef.current) return;
           playSequence();
         },
         onEnterBack: () => {
-          if (!isDesktop() || hasPlayedRef.current) return;
+          if (!canSkillsTakeControl()) return;
+          if (hasPlayedRef.current) return;
           playSequence();
         },
         onUpdate: (self) => {
-          if (!isDesktop() || hasPlayedRef.current) return;
+          if (!canSkillsTakeControl()) return;
+          if (hasPlayedRef.current) return;
           if (self.direction !== 1) return;
 
           const rect = sectionRef.current?.getBoundingClientRect();
@@ -366,6 +398,7 @@ export default function Skills() {
           }
         },
         onLeaveBack: () => {
+          if (isDirectorLocked()) return;
           if (!isDesktop()) return;
           resetSequence();
         },
@@ -411,7 +444,6 @@ export default function Skills() {
           }
         )
         .to({}, { duration: 0.12 })
-
         .fromTo(
           ".skill-cluster:nth-child(4)",
           {
@@ -434,7 +466,6 @@ export default function Skills() {
           }
         )
         .to({}, { duration: 0.12 })
-
         .fromTo(
           ".skill-cluster:nth-child(2)",
           {
@@ -457,7 +488,6 @@ export default function Skills() {
           }
         )
         .to({}, { duration: 0.12 })
-
         .fromTo(
           ".skill-cluster:nth-child(3)",
           {
@@ -494,7 +524,6 @@ export default function Skills() {
       sequenceTl
         .to({}, { duration: 0.18 })
         .add("sequenceStart")
-
         .fromTo(
           ".skills-visual",
           {
@@ -511,7 +540,6 @@ export default function Skills() {
           },
           "sequenceStart"
         )
-
         .add(cardTl, "sequenceStart");
 
       sequenceTlRef.current = sequenceTl;
@@ -563,7 +591,7 @@ export default function Skills() {
         el: badgeRefs.current[index],
       }));
 
-      const clamp = (value, min, max) => Math.min(Math.max(value, min), max);
+      const clampValue = (value, min, max) => Math.min(Math.max(value, min), max);
 
       const keepSpeed = (item) => {
         const length = Math.hypot(item.vx, item.vy) || 1;
@@ -875,8 +903,8 @@ export default function Skills() {
 
         state.forEach((item) => {
           const bounds = zoneBounds[item.zone];
-          item.x = clamp(item.x, bounds.left + item.width / 2, bounds.right - item.width / 2);
-          item.y = clamp(item.y, bounds.top + item.height / 2, bounds.bottom - item.height / 2);
+          item.x = clampValue(item.x, bounds.left + item.width / 2, bounds.right - item.width / 2);
+          item.y = clampValue(item.y, bounds.top + item.height / 2, bounds.bottom - item.height / 2);
           keepSpeed(item);
         });
 

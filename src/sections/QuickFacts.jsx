@@ -40,7 +40,7 @@ export default function QuickFacts() {
     <section
       id="quickfacts"
       className="quickfacts section-shell"
-      data-scroll-end-offset="clamp(180px, 28vh, 420px)"
+      data-scroll-end-offset="clamp(72px, 10vh, 140px)"
     >
       <div className="quickfacts-shell">
         <div className="quickfacts-hero">

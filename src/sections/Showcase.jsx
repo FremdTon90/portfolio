@@ -132,7 +132,9 @@ export default function Showcase() {
   };
 
   return (
-    <section className="showcase section-shell" id="showcase" ref={sectionRef}>
+    <section className="showcase section-shell" id="showcase" ref={sectionRef}
+      data-scroll-start-offset="clamp(72px, 10vh, 140px)"
+      data-scroll-end-offset="clamp(96px, 14vh, 180px)">
       <div className="showcase-bg showcase-bg--one" />
       <div className="showcase-bg showcase-bg--two" />
 
@@ -189,9 +191,8 @@ export default function Showcase() {
             <button
               key={id}
               type="button"
-              className={`showcase-theme-button ${
-                activeTheme === id ? "showcase-theme-button--active" : ""
-              }`}
+              className={`showcase-theme-button ${activeTheme === id ? "showcase-theme-button--active" : ""
+                }`}
               onClick={() => handleSelect(id)}
             >
               {label}

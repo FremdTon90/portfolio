@@ -197,7 +197,7 @@ export default function Projects() {
       className="projects section-shell"
       id="projects"
       ref={sectionRef}
-      data-scroll-end-offset="clamp(180px, 28vh, 420px)"
+      data-scroll-end-offset="clamp(96px, 14vh, 180px)"
     >
       <div className="projects-bg projects-bg--one" />
       <div className="projects-bg projects-bg--two" />

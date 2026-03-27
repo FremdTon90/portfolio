@@ -157,7 +157,6 @@ function AppLoader({ canvasRef, contentRef, barFillRef, isFinishing = false }) {
 }
 
 function App() {
-  const [sectionResetKey, setSectionResetKey] = useState(0)
   const [isLoaderFinishing, setIsLoaderFinishing] = useState(false)
   const [isLoaderVisible, setIsLoaderVisible] = useState(true)
 
@@ -180,8 +179,6 @@ function App() {
   }, [getCleanBaseUrl])
 
   const handleHeroNavigationStart = useCallback(() => {
-    setSectionResetKey((current) => current + 1)
-
     const nextIndex = historyIndexRef.current + 1
 
     window.history.pushState(
@@ -385,19 +382,18 @@ function App() {
       ) : null}
 
       <ScrollDirector sections={sections}>
-        {({ navigateToSection }) => (
+        {({ navigateToSection, getSectionEnterKey }) => (
           <main className={`app-shell${appReady ? ' is-ready' : ''}`}>
             <Hero
-              key={`hero-${sectionResetKey}`}
               onNavigationStart={handleHeroNavigationStart}
               navigateToSection={navigateToSection}
             />
 
-            <QuickFacts key={`quickfacts-${sectionResetKey}`} />
-            <Skills key={`skills-${sectionResetKey}`} />
-            <Projects key={`projects-${sectionResetKey}`} />
-            <Showcase key={`showcase-${sectionResetKey}`} />
-            <Contact key={`contact-${sectionResetKey}`} />
+            <QuickFacts />
+            <Skills key={`skills-${getSectionEnterKey('skills')}`} />
+            <Projects />
+            <Showcase />
+            <Contact />
           </main>
         )}
       </ScrollDirector>

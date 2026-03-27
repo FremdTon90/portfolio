@@ -11,6 +11,9 @@ const ARMING_DISTANCE = 700
 const ARMING_RESET_DELAY = 850
 const PLAYBACK_DURATION = 1400
 
+const WHEEL_SCROLL_MULTIPLIER = 2.5
+const KEYBOARD_SCROLL_MULTIPLIER = 1.15
+
 const START_SENTINEL_SELECTOR = '[data-scroll-sentinel="start"]'
 const END_SENTINEL_SELECTOR = '[data-scroll-sentinel="end"]'
 
@@ -23,6 +26,19 @@ function clamp(value, min, max) {
 
 function getSectionElement(id) {
   return document.getElementById(id)
+}
+
+function isEditableTarget(target) {
+  if (!target) return false
+
+  const tagName = target.tagName?.toLowerCase()
+
+  return (
+    tagName === 'input' ||
+    tagName === 'textarea' ||
+    tagName === 'select' ||
+    target.isContentEditable
+  )
 }
 
 function getStartSentinelOffset(sectionElement) {
@@ -98,8 +114,36 @@ function ensureSectionSentinels(sectionElement) {
   }
 }
 
+function getKeyboardDelta(event) {
+  const viewportStep = Math.round(window.innerHeight * 0.9)
+  const lineStep = 120
+
+  switch (event.key) {
+    case 'ArrowDown':
+      return lineStep
+    case 'ArrowUp':
+      return -lineStep
+    case 'PageDown':
+      return viewportStep
+    case 'PageUp':
+      return -viewportStep
+    case ' ':
+      return event.shiftKey ? -viewportStep : viewportStep
+    default:
+      return 0
+  }
+}
+
+function getAbsoluteTop(element) {
+  const rect = element.getBoundingClientRect()
+  return window.scrollY + rect.top
+}
+
 export default function ScrollDirector({ sections, children }) {
   const [activeSectionId, setActiveSectionId] = useState(sections[0]?.id ?? null)
+  const [sectionEnterVersions, setSectionEnterVersions] = useState(() =>
+    Object.fromEntries(sections.map((section) => [section.id, 0]))
+  )
   const [transitionState, setTransitionState] = useState({
     active: false,
     phase: 'idle',
@@ -218,7 +262,7 @@ export default function ScrollDirector({ sections, children }) {
         return false
       }
 
-      const targetTop = Math.max(0, Math.round(window.scrollY + target.getBoundingClientRect().top))
+      const targetTop = Math.max(0, Math.round(getAbsoluteTop(target)))
 
       window.requestAnimationFrame(() => {
         window.scrollTo({
@@ -233,6 +277,10 @@ export default function ScrollDirector({ sections, children }) {
           })
 
           setActiveSectionId(nextSectionId)
+          setSectionEnterVersions((current) => ({
+            ...current,
+            [nextSectionId]: (current[nextSectionId] ?? 0) + 1,
+          }))
         })
       })
 
@@ -334,6 +382,137 @@ export default function ScrollDirector({ sections, children }) {
     [navigateToSection, resetArming]
   )
 
+  const getActiveGeometry = useCallback(() => {
+    const activeId = activeSectionIdRef.current
+    const activeElement = getSectionElement(activeId)
+
+    if (!activeElement) {
+      return null
+    }
+
+    const currentIndex = sections.findIndex((section) => section.id === activeId)
+
+    if (currentIndex === -1) {
+      return null
+    }
+
+    const startSentinel = activeElement.querySelector(START_SENTINEL_SELECTOR)
+    const endSentinel = activeElement.querySelector(END_SENTINEL_SELECTOR)
+
+    const activeTop = getAbsoluteTop(activeElement)
+    const activeHeight = activeElement.offsetHeight
+    const maxScrollTop = Math.max(activeTop, activeTop + activeHeight - window.innerHeight)
+
+    const startTop = startSentinel ? getAbsoluteTop(startSentinel) : activeTop
+    const endTop = endSentinel ? getAbsoluteTop(endSentinel) : maxScrollTop
+
+    const atTopEdge = window.scrollY <= startTop + TOP_EDGE_TOLERANCE
+    const atBottomEdge = endTop - window.scrollY <= window.innerHeight - BOTTOM_TRIGGER_TOLERANCE
+
+    return {
+      activeId,
+      currentIndex,
+      activeTop,
+      maxScrollTop,
+      hasPrevious: currentIndex > 0,
+      hasNext: currentIndex < sections.length - 1,
+      atTopEdge,
+      atBottomEdge,
+    }
+  }, [sections])
+
+  const processDirectionalInput = useCallback(
+    (deltaY, inputType = 'wheel') => {
+      const geometry = getActiveGeometry()
+
+      if (!geometry) {
+        return false
+      }
+
+      const {
+        activeId,
+        currentIndex,
+        activeTop,
+        maxScrollTop,
+        hasPrevious,
+        hasNext,
+        atTopEdge,
+        atBottomEdge,
+      } = geometry
+
+      const multiplier = inputType === 'keyboard'
+        ? KEYBOARD_SCROLL_MULTIPLIER
+        : WHEEL_SCROLL_MULTIPLIER
+
+      const scaledDelta = deltaY * multiplier
+
+      if (scaledDelta > 0) {
+        if (atBottomEdge && hasNext) {
+          window.scrollTo({
+            top: maxScrollTop,
+            behavior: 'auto',
+          })
+
+          startArming({
+            from: activeId,
+            to: sections[currentIndex + 1].id,
+            direction: 'forward',
+            deltaMagnitude: Math.abs(scaledDelta),
+          })
+
+          return true
+        }
+
+        const nextTop = clamp(window.scrollY + scaledDelta, activeTop, maxScrollTop)
+
+        window.scrollTo({
+          top: nextTop,
+          behavior: 'auto',
+        })
+
+        if (armingRef.current.progress > 0) {
+          resetArming()
+        }
+
+        return true
+      }
+
+      if (scaledDelta < 0) {
+        if (atTopEdge && hasPrevious) {
+          window.scrollTo({
+            top: activeTop,
+            behavior: 'auto',
+          })
+
+          startArming({
+            from: activeId,
+            to: sections[currentIndex - 1].id,
+            direction: 'backward',
+            deltaMagnitude: Math.abs(scaledDelta),
+          })
+
+          return true
+        }
+
+        const nextTop = clamp(window.scrollY + scaledDelta, activeTop, maxScrollTop)
+
+        window.scrollTo({
+          top: nextTop,
+          behavior: 'auto',
+        })
+
+        if (armingRef.current.progress > 0) {
+          resetArming()
+        }
+
+        return true
+      }
+
+      return false
+    },
+    [getActiveGeometry, resetArming, sections, startArming]
+  )
+
   useEffect(() => {
     const elements = sections
       .map((section) => getSectionElement(section.id))
@@ -389,82 +568,53 @@ export default function ScrollDirector({ sections, children }) {
 
   useEffect(() => {
     const handleWheel = (event) => {
-      const activeId = activeSectionIdRef.current
-      const activeElement = getSectionElement(activeId)
-
-      if (!activeElement) {
-        return
-      }
-
       if (isProgrammaticRef.current) {
         event.preventDefault()
         return
       }
 
-      const currentIndex = sections.findIndex((section) => section.id === activeId)
+      event.preventDefault()
+      processDirectionalInput(event.deltaY, 'wheel')
+    }
 
-      if (currentIndex === -1) {
+    const handleKeyDown = (event) => {
+      if (isEditableTarget(event.target)) {
         return
       }
 
-      const deltaY = event.deltaY
-      const viewportHeight = window.innerHeight
-
-      const startSentinel = activeElement.querySelector(START_SENTINEL_SELECTOR)
-      const endSentinel = activeElement.querySelector(END_SENTINEL_SELECTOR)
-
-      const activeRect = activeElement.getBoundingClientRect()
-      const startRect = startSentinel?.getBoundingClientRect()
-      const endRect = endSentinel?.getBoundingClientRect()
-
-      const atTopEdge = startRect
-        ? startRect.top >= -TOP_EDGE_TOLERANCE
-        : activeRect.top >= -TOP_EDGE_TOLERANCE
-
-      const atBottomEdge = endRect
-        ? endRect.top <= viewportHeight - BOTTOM_TRIGGER_TOLERANCE
-        : activeRect.bottom <= viewportHeight + BOTTOM_TRIGGER_TOLERANCE
-
-      const hasPrevious = currentIndex > 0
-      const hasNext = currentIndex < sections.length - 1
-
-      if (deltaY > 0 && hasNext && atBottomEdge) {
-        event.preventDefault()
-
-        startArming({
-          from: activeId,
-          to: sections[currentIndex + 1].id,
-          direction: 'forward',
-          deltaMagnitude: Math.abs(deltaY),
-        })
-
+      if (
+        event.key !== 'ArrowDown' &&
+        event.key !== 'ArrowUp' &&
+        event.key !== 'PageDown' &&
+        event.key !== 'PageUp' &&
+        event.key !== ' '
+      ) {
         return
       }
 
-      if (deltaY < 0 && hasPrevious && atTopEdge) {
-        event.preventDefault()
+      const deltaY = getKeyboardDelta(event)
 
-        startArming({
-          from: activeId,
-          to: sections[currentIndex - 1].id,
-          direction: 'backward',
-          deltaMagnitude: Math.abs(deltaY),
-        })
-
+      if (!deltaY) {
         return
       }
 
-      if (armingRef.current.progress > 0) {
-        resetArming()
+      event.preventDefault()
+
+      if (isProgrammaticRef.current) {
+        return
       }
+
+      processDirectionalInput(deltaY, 'keyboard')
     }
 
     window.addEventListener('wheel', handleWheel, { passive: false })
+    window.addEventListener('keydown', handleKeyDown, { passive: false })
 
     return () => {
       window.removeEventListener('wheel', handleWheel)
+      window.removeEventListener('keydown', handleKeyDown)
     }
-  }, [resetArming, sections, startArming])
+  }, [processDirectionalInput])
 
   useEffect(() => {
     return () => {
@@ -479,8 +629,9 @@ export default function ScrollDirector({ sections, children }) {
       navigateToSection,
       releaseNavigationLock,
       transitionState,
+      getSectionEnterKey: (sectionId) => sectionEnterVersions[sectionId] ?? 0,
     }),
-    [activeSectionId, navigateToSection, releaseNavigationLock, transitionState]
+    [activeSectionId, navigateToSection, releaseNavigationLock, sectionEnterVersions, transitionState]
   )
 
   return (
