@@ -385,7 +385,7 @@ function App() {
       ) : null}
 
       <ScrollDirector sections={sections}>
-        {({ activeSectionId, navigateToSection }) => (
+        {({ navigateToSection }) => (
           <main className={`app-shell${appReady ? ' is-ready' : ''}`}>
             <Hero
               key={`hero-${sectionResetKey}`}
@@ -393,12 +393,7 @@ function App() {
               navigateToSection={navigateToSection}
             />
 
-            <QuickFacts
-              key={`quickfacts-${sectionResetKey}`}
-              isActive={activeSectionId === 'quickfacts'}
-              navigateToSection={navigateToSection}
-            />
-
+            <QuickFacts key={`quickfacts-${sectionResetKey}`} />
             <Skills key={`skills-${sectionResetKey}`} />
             <Projects key={`projects-${sectionResetKey}`} />
             <Showcase key={`showcase-${sectionResetKey}`} />

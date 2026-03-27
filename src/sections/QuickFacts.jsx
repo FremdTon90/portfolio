@@ -1,4 +1,3 @@
-import SectionFrame from '../components/SectionFrame'
 import './QuickFacts.css'
 
 const quickFactCards = [
@@ -36,27 +35,18 @@ const quickFactCards = [
   },
 ]
 
-export default function QuickFacts({ isActive, navigateToSection }) {
+export default function QuickFacts() {
   return (
-    <SectionFrame
-      sectionId="quickfacts"
-      isActive={isActive}
-      exitIntentEnabled
-      showExitUi
-      previousSectionId="hero"
-      nextSectionId="skills"
-      navigateToSection={navigateToSection}
-    >
-      <div className="quickfacts-shell section-shell">
+    <section id="quickfacts" className="quickfacts section-shell">
+      <div className="quickfacts-shell">
         <div className="quickfacts-hero">
           <span className="section-label">Quick Facts</span>
 
           <div className="section-copy">
             <h2>Ich baue nicht einfach Webseiten. Ich baue Verhalten.</h2>
             <p>
-              Diese Section reagiert jetzt in beide Richtungen bewusst. Der Hinweis erscheint
-              erst dann, wenn du an der Kante wirklich weiter scrollst — nicht einfach nur,
-              weil du gerade in der Nähe bist.
+              Das Ziel ist nicht bloß Information. Das Ziel ist, dass Scroll, Timing,
+              Interaktion und Übergänge als zusammenhängende Experience wirken.
             </p>
           </div>
         </div>
@@ -73,11 +63,11 @@ export default function QuickFacts({ isActive, navigateToSection }) {
         <div className="quickfacts-tail">
           <div className="quickfacts-tail__line" />
           <p>
-            Unten kein versehentliches Weiterkippen. Oben kein hektisches Zurückspringen.
-            Beides soll später gleich hochwertig wirken.
+            Genau aus diesem Grund werden Section-Wechsel jetzt nicht mehr einfach
+            stumpf durchgescrollt, sondern bewusst aufgebaut.
           </p>
         </div>
       </div>
-    </SectionFrame>
+    </section>
   )
 }
