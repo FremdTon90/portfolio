@@ -4,10 +4,18 @@ import TransitionLayer from './TransitionLayer'
 const NAV_LOCK_DURATION = 1100
 const OBSERVER_THRESHOLD = 0.62
 
-const EDGE_TOLERANCE = 8
+const TOP_EDGE_TOLERANCE = 8
+const BOTTOM_TRIGGER_TOLERANCE = 12
+
 const ARMING_DISTANCE = 700
 const ARMING_RESET_DELAY = 850
 const PLAYBACK_DURATION = 1400
+
+const START_SENTINEL_SELECTOR = '[data-scroll-sentinel="start"]'
+const END_SENTINEL_SELECTOR = '[data-scroll-sentinel="end"]'
+
+const DEFAULT_START_SENTINEL_TOP_OFFSET = '0px'
+const DEFAULT_END_SENTINEL_BOTTOM_OFFSET = 'clamp(96px, 16vh, 220px)'
 
 function clamp(value, min, max) {
   return Math.min(Math.max(value, min), max)
@@ -15,6 +23,79 @@ function clamp(value, min, max) {
 
 function getSectionElement(id) {
   return document.getElementById(id)
+}
+
+function getStartSentinelOffset(sectionElement) {
+  return (
+    sectionElement.getAttribute('data-scroll-start-offset') ||
+    DEFAULT_START_SENTINEL_TOP_OFFSET
+  )
+}
+
+function getEndSentinelOffset(sectionElement) {
+  return (
+    sectionElement.getAttribute('data-scroll-end-offset') ||
+    DEFAULT_END_SENTINEL_BOTTOM_OFFSET
+  )
+}
+
+function ensureSectionSentinels(sectionElement) {
+  if (!sectionElement) {
+    return () => {}
+  }
+
+  const createdNodes = []
+  const originalPosition = sectionElement.style.position
+  const computedPosition = window.getComputedStyle(sectionElement).position
+
+  if (computedPosition === 'static') {
+    sectionElement.style.position = 'relative'
+  }
+
+  let startSentinel = sectionElement.querySelector(START_SENTINEL_SELECTOR)
+
+  if (!startSentinel) {
+    startSentinel = document.createElement('div')
+    startSentinel.dataset.scrollSentinel = 'start'
+    startSentinel.setAttribute('aria-hidden', 'true')
+    startSentinel.style.position = 'absolute'
+    startSentinel.style.left = '0'
+    startSentinel.style.right = '0'
+    startSentinel.style.height = '1px'
+    startSentinel.style.pointerEvents = 'none'
+    startSentinel.style.opacity = '0'
+    startSentinel.style.zIndex = '-1'
+    sectionElement.appendChild(startSentinel)
+    createdNodes.push(startSentinel)
+  }
+
+  let endSentinel = sectionElement.querySelector(END_SENTINEL_SELECTOR)
+
+  if (!endSentinel) {
+    endSentinel = document.createElement('div')
+    endSentinel.dataset.scrollSentinel = 'end'
+    endSentinel.setAttribute('aria-hidden', 'true')
+    endSentinel.style.position = 'absolute'
+    endSentinel.style.left = '0'
+    endSentinel.style.right = '0'
+    endSentinel.style.height = '1px'
+    endSentinel.style.pointerEvents = 'none'
+    endSentinel.style.opacity = '0'
+    endSentinel.style.zIndex = '-1'
+    sectionElement.appendChild(endSentinel)
+    createdNodes.push(endSentinel)
+  }
+
+  startSentinel.style.top = getStartSentinelOffset(sectionElement)
+  endSentinel.style.bottom = getEndSentinelOffset(sectionElement)
+
+  return () => {
+    createdNodes.forEach((node) => node.remove())
+
+    if (computedPosition === 'static') {
+      sectionElement.style.position = originalPosition
+    }
+  }
 }
 
 export default function ScrollDirector({ sections, children }) {
@@ -262,6 +343,22 @@ export default function ScrollDirector({ sections, children }) {
       return undefined
     }
 
+    const cleanupFns = elements.map((element) => ensureSectionSentinels(element))
+
+    return () => {
+      cleanupFns.forEach((cleanup) => cleanup())
+    }
+  }, [sections])
+
+  useEffect(() => {
+    const elements = sections
+      .map((section) => getSectionElement(section.id))
+      .filter(Boolean)
+
+    if (!elements.length) {
+      return undefined
+    }
+
     const observer = new IntersectionObserver(
       (entries) => {
         if (isProgrammaticRef.current) {
@@ -310,12 +407,23 @@ export default function ScrollDirector({ sections, children }) {
         return
       }
 
-      const rect = activeElement.getBoundingClientRect()
-      const viewportHeight = window.innerHeight
       const deltaY = event.deltaY
+      const viewportHeight = window.innerHeight
 
-      const atTopEdge = rect.top >= -EDGE_TOLERANCE
-      const atBottomEdge = rect.bottom <= viewportHeight + EDGE_TOLERANCE
+      const startSentinel = activeElement.querySelector(START_SENTINEL_SELECTOR)
+      const endSentinel = activeElement.querySelector(END_SENTINEL_SELECTOR)
+
+      const activeRect = activeElement.getBoundingClientRect()
+      const startRect = startSentinel?.getBoundingClientRect()
+      const endRect = endSentinel?.getBoundingClientRect()
+
+      const atTopEdge = startRect
+        ? startRect.top >= -TOP_EDGE_TOLERANCE
+        : activeRect.top >= -TOP_EDGE_TOLERANCE
+
+      const atBottomEdge = endRect
+        ? endRect.top <= viewportHeight - BOTTOM_TRIGGER_TOLERANCE
+        : activeRect.bottom <= viewportHeight + BOTTOM_TRIGGER_TOLERANCE
 
       const hasPrevious = currentIndex > 0
       const hasNext = currentIndex < sections.length - 1

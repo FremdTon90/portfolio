@@ -193,7 +193,12 @@ export default function Projects() {
   }, []);
 
   return (
-    <section className="projects section-shell" id="projects" ref={sectionRef}>
+    <section
+      className="projects section-shell"
+      id="projects"
+      ref={sectionRef}
+      data-scroll-end-offset="clamp(180px, 28vh, 420px)"
+    >
       <div className="projects-bg projects-bg--one" />
       <div className="projects-bg projects-bg--two" />
 

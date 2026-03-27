@@ -37,7 +37,11 @@ const quickFactCards = [
 
 export default function QuickFacts() {
   return (
-    <section id="quickfacts" className="quickfacts section-shell">
+    <section
+      id="quickfacts"
+      className="quickfacts section-shell"
+      data-scroll-end-offset="clamp(180px, 28vh, 420px)"
+    >
       <div className="quickfacts-shell">
         <div className="quickfacts-hero">
           <span className="section-label">Quick Facts</span>
