@@ -49,14 +49,16 @@ const DEBUG_SETTINGS = {
     idleDamping: 6.8,
     hoverDamping: 5.6,
     moveDamping: 5.0,
-    pressDamping: 4.2,
-    returnDamping: 5.6,
+    pressDamping: 5.2,
+    returnDamping: 5.8,
     planeDepthFactor: 0.36,
     planeUpFactor: 58,
-    maxReachMultiplier: 0.98,
+    maxReachMultiplier: 1.04,
     targetWorldYOffsetTop: 0.11,
     targetWorldYOffsetBottom: 0.03,
-    pressWorldYOffset: -0.014,
+    pressWorldYOffset: -0.02,
+    windupNormalOffset: -0.028,
+    pressNormalOffset: 0.185,
     targetDeadzone: 0.0009,
   },
 
@@ -64,8 +66,8 @@ const DEBUG_SETTINGS = {
     enabled: true,
     axis: 'x',
     sign: -1,
-    blend: 0.045,
-    maxTurnRadians: 0.42,
+    blend: 0.06,
+    maxTurnRadians: 0.48,
     forwardOffsetEuler: {
       x: 0,
       y: 0,
@@ -423,10 +425,10 @@ function SpiderRig({ interactionRef, onReady }) {
 
       abdomenOffsetEuler.set(
         Math.sin(elapsed * DEBUG_SETTINGS.abdomenMotion.rotationXSpeed) *
-          DEBUG_SETTINGS.abdomenMotion.rotationXAmplitude,
+        DEBUG_SETTINGS.abdomenMotion.rotationXAmplitude,
         0,
         Math.sin(elapsed * DEBUG_SETTINGS.abdomenMotion.rotationZSpeed) *
-          DEBUG_SETTINGS.abdomenMotion.rotationZAmplitude
+        DEBUG_SETTINGS.abdomenMotion.rotationZAmplitude
       )
 
       abdomenOffsetQuaternion.setFromEuler(abdomenOffsetEuler)
@@ -484,9 +486,32 @@ function SpiderRig({ interactionRef, onReady }) {
         normalizedScreenY
       )
 
+      const windupAmount =
+        interaction.mode === 'hovering'
+          ? 0
+          : interaction.mode === 'pressing'
+            ? Math.max(0, 1 - pressAmount)
+            : 0
+
+      const forwardPressAmount =
+        interaction.mode === 'pressing' || interaction.mode === 'returning'
+          ? pressAmount
+          : 0
+
       rawTargetWorldRef.current.copy(planeHit)
+
+      rawTargetWorldRef.current.addScaledVector(
+        planeNormal,
+        DEBUG_SETTINGS.targetFollow.windupNormalOffset * windupAmount
+      )
+
+      rawTargetWorldRef.current.addScaledVector(
+        planeNormal,
+        DEBUG_SETTINGS.targetFollow.pressNormalOffset * forwardPressAmount
+      )
+
       rawTargetWorldRef.current.y +=
-        dynamicYOffset + DEBUG_SETTINGS.targetFollow.pressWorldYOffset * pressAmount
+        dynamicYOffset + DEBUG_SETTINGS.targetFollow.pressWorldYOffset * forwardPressAmount
     }
 
     previousModeRef.current = interaction.mode
